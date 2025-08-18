@@ -3,7 +3,7 @@ package com.yuan.yuanaicodeproducer.common;
 import com.yuan.yuanaicodeproducer.exception.ErrorCode;
 
 /**
- * @author LXY
+ * @author Yuan
  * @version 1.0
  * @date 2025-08-18 11:05:53
  * @className ResultUtils

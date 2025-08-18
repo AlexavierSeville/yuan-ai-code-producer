@@ -3,7 +3,7 @@ package com.yuan.yuanaicodeproducer.common;
 import lombok.Data;
 
 /**
- * @author LXY
+ * @author Yuan
  * @version 1.0
  * @date 2025-08-18 11:12:03
  * @className PageRequest

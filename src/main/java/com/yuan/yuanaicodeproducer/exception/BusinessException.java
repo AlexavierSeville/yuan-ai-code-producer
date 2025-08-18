@@ -3,7 +3,7 @@ package com.yuan.yuanaicodeproducer.exception;
 import lombok.Getter;
 
 /**
- * @author LXY
+ * @author Yuan
  * @version 1.0
  * @date 2025-08-18 10:55:42
  * @className BusinessException

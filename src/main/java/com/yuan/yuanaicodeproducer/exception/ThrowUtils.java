@@ -1,7 +1,7 @@
 package com.yuan.yuanaicodeproducer.exception;
 
 /**
- * @author LXY
+ * @author Yuan
  * @version 1.0
  * @date 2025-08-18 10:58:36
  * @className ThrowUtils
