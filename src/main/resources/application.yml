@@ -1,0 +1,23 @@
+spring:
+  application:
+    name: yuan-ai-code-producer
+server:
+  port: 8700
+  servlet:
+    # 设置访问前缀
+    context-path: /yuan
+
+# springdoc-openapi
+# http://localhost:8700/yuan/doc.html
+springdoc:
+  group-configs:
+    - group: "default"
+      paths-to-match:
+        - '/**'
+      packages-to-scan:
+        - 'com.yuan.yuanaicodeproducer.controller'
+# knife4j的增强配置
+knife4j:
+  enable: true
+  setting:
+    language: zh_cn
