@@ -95,7 +95,7 @@ const filterMenus = (menus = [] as MenuProps['items']) => {
 }
 
 // 展示在菜单的路由数组
-const menuItems = computed<MenuProps['items']>(() => filterMenus(originItems))
+const filteredMenuItems = computed<MenuProps['items']>(() => filterMenus(originItems))
 </script>
 
 <template>
@@ -109,7 +109,7 @@ const menuItems = computed<MenuProps['items']>(() => filterMenus(originItems))
         theme="light"
         mode="horizontal"
         :selectedKeys="selectedKeys"
-        :items="menuItems"
+        :items="filteredMenuItems"
         @click="handleMenuClick"
       />
     </div>
