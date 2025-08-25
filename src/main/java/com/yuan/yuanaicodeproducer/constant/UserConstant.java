@@ -1,7 +1,7 @@
 package com.yuan.yuanaicodeproducer.constant;
 
 /**
- * @author LXY
+ * @author Yuan
  * @version 1.0
  * @date 2025-08-19 11:50:18
  * @className UserConstant

@@ -6,7 +6,7 @@ import java.io.Serializable;
 import java.time.LocalDateTime;
 
 /**
- * @author LXY
+ * @author Yuan
  * @version 1.0
  * @date 2025-08-19 11:40:06
  * @className LoginUserVo
