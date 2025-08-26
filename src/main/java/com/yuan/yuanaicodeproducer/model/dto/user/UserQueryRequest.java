@@ -1,4 +1,4 @@
-package com.yuan.yuanaicodeproducer.model.dto;
+package com.yuan.yuanaicodeproducer.model.dto.user;
 
 import com.yuan.yuanaicodeproducer.common.PageRequest;
 import lombok.Data;

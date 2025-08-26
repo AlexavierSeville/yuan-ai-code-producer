@@ -2,7 +2,7 @@ package com.yuan.yuanaicodeproducer.service;
 
 import com.mybatisflex.core.query.QueryWrapper;
 import com.mybatisflex.core.service.IService;
-import com.yuan.yuanaicodeproducer.model.dto.UserQueryRequest;
+import com.yuan.yuanaicodeproducer.model.dto.user.UserQueryRequest;
 import com.yuan.yuanaicodeproducer.model.entity.User;
 import com.yuan.yuanaicodeproducer.model.vo.LoginUserVO;
 import com.yuan.yuanaicodeproducer.model.vo.UserVO;

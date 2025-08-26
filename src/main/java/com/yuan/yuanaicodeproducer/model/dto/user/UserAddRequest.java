@@ -1,4 +1,4 @@
-package com.yuan.yuanaicodeproducer.model.dto;
+package com.yuan.yuanaicodeproducer.model.dto.user;
 
 import lombok.Data;
 
@@ -7,17 +7,12 @@ import java.io.Serializable;
 /**
  * @author Yuan
  * @version 1.0
- * @date 2025-08-19 17:25:27
- * @className UserUpdateRequest
- * @description 用户更新请求
+ * @date 2025-08-19 17:24:12
+ * @className UserAddRequest
+ * @description 用户创建请求(管理员)
  */
 @Data
-public class UserUpdateRequest implements Serializable {
-
-    /**
-     * id
-     */
-    private Long id;
+public class UserAddRequest implements Serializable {
 
     /**
      * 用户昵称
@@ -25,17 +20,22 @@ public class UserUpdateRequest implements Serializable {
     private String userName;
 
     /**
+     * 账号
+     */
+    private String userAccount;
+
+    /**
      * 用户头像
      */
     private String userAvatar;
 
     /**
-     * 简介
+     * 用户简介
      */
     private String userProfile;
 
     /**
-     * 用户角色：user/admin
+     * 用户角色: user, admin
      */
     private String userRole;
 
