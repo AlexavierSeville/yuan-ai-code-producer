@@ -14,9 +14,10 @@ import java.nio.charset.StandardCharsets;
  * @author Yuan
  * @version 1.0
  * @date 2025-08-22 16:18:30
- * @className CodeFileSaver
+ * @className CodeFileSaver；已弃用，新方法定义于saver包内
  * @description 把生成的代码文件保存到本地服务器
  */
+@Deprecated
 public class CodeFileSaver {
 
     // 文件保存根目录，获取当前工作目录并拼接上 "/tmp/code_output"

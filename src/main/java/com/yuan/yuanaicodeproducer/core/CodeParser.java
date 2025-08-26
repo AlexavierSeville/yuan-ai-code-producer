@@ -7,12 +7,13 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * @author LXY
+ * @author Yuan
  * @version 1.0
  * @date 2025-08-25 10:45:20
- * @className CodeParser
+ * @className CodeParser；已弃用，新方法定义于parser包内
  * @description 代码解析器,提供静态方法解析不同类型的代码内容
  */
+@Deprecated
 public class CodeParser {
 
     // 正则表达式模式，用于匹配 HTML 代码块
