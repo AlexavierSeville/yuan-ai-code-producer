@@ -1,6 +1,7 @@
 package com.yuan.yuanaicodeproducer.model.dto.app;
 
 import lombok.Data;
+import io.swagger.v3.oas.annotations.media.Schema;
 
 import java.io.Serializable;
 
@@ -12,11 +13,13 @@ import java.io.Serializable;
  * @description 用户创建应用时，只需要填写初始化提示词。系统会自动生成应用名称(取提示词前 12 位)和默认的代码生成类型。
  */
 @Data
+@Schema(name = "AppAddRequest", description = "创建应用请求，包含初始化 Prompt 信息")
 public class AppAddRequest implements Serializable {
 
     /**
      * 应用初始化的 prompt
      */
+    @Schema(description = "应用的初始化 Prompt，用于指导代码生成", requiredMode = Schema.RequiredMode.REQUIRED)
     private String initPrompt;
 
     private static final long serialVersionUID = 3791271717373120793L;

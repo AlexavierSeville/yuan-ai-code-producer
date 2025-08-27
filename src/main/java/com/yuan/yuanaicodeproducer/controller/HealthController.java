@@ -5,6 +5,8 @@ import com.yuan.yuanaicodeproducer.common.ResultUtils;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import io.swagger.v3.oas.annotations.Operation;
 
 /**
  * @author Yuan
@@ -15,8 +17,10 @@ import org.springframework.web.bind.annotation.RestController;
  */
 @RestController
 @RequestMapping("/health")
+@Tag(name = "健康检查", description = "系统自检与可用性探测接口")
 public class HealthController {
     @GetMapping("")
+    @Operation(summary = "健康检查", description = "返回 OK 表示服务可用")
     public BaseResponse<String> health() {
         return ResultUtils.success("ok");
     }

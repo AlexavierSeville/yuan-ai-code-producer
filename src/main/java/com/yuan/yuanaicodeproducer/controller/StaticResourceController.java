@@ -12,6 +12,9 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.HandlerMapping;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 
 import java.io.File;
 
@@ -24,6 +27,7 @@ import java.io.File;
  */
 @RestController
 @RequestMapping("/static")
+@Tag(name = "静态资源接口", description = "根据部署 Key 提供静态资源访问与目录重定向")
 public class StaticResourceController {
 
     // 应用生成根目录（用于浏览）
@@ -34,9 +38,10 @@ public class StaticResourceController {
      * 访问格式：http://localhost:8700/yuan/static/{deployKey}[/{fileName}]
      */
     @GetMapping("/{deployKey}/**")
+    @Operation(summary = "提供静态资源访问", description = "根据部署 Key 返回对应静态资源，支持目录重定向与 index.html 默认页")
     public ResponseEntity<Resource> serveStaticResource(
-            @PathVariable String deployKey,
-            HttpServletRequest request) {
+            @Parameter(description = "部署唯一标识", required = true) @PathVariable String deployKey,
+            @Parameter(hidden = true) HttpServletRequest request) {
         try {
             // 获取资源路径
             String resourcePath = (String) request.getAttribute(HandlerMapping.PATH_WITHIN_HANDLER_MAPPING_ATTRIBUTE);

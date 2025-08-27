@@ -28,6 +28,9 @@ import com.yuan.yuanaicodeproducer.model.entity.App;
 import com.yuan.yuanaicodeproducer.service.AppService;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -42,6 +45,7 @@ import java.util.Map;
 @RestController
 @RequestMapping("/app")
 @RequiredArgsConstructor
+@Tag(name = "应用接口", description = "与应用创建、部署、查询和生成代码相关的接口")
 public class AppController {
 
     private final AppService appService;
@@ -74,9 +78,16 @@ public class AppController {
      */
 
     @GetMapping(value = "/chat/gen/code", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    public Flux<ServerSentEvent<String>> chatToGenCode(@RequestParam Long appId,
+    @Operation(
+            summary = "应用聊天生成代码（SSE 流）",
+            description = "用户登录后，基于指定的应用 ID 和用户消息实时生成代码，返回 Server-Sent Events 流以便前端逐步渲染。"
+    )
+    public Flux<ServerSentEvent<String>> chatToGenCode(
+                                      @Parameter(description = "应用 ID", required = true)
+                                      @RequestParam Long appId,
+                                      @Parameter(description = "用户输入的需求/提示词", required = true)
                                       @RequestParam String message,
-                                      HttpServletRequest request) {
+                                      @Parameter(hidden = true) HttpServletRequest request) {
         // 参数校验
         ThrowUtils.throwIf(appId == null || appId <= 0, ErrorCode.PARAMS_ERROR, "应用ID无效");
         ThrowUtils.throwIf(StrUtil.isBlank(message), ErrorCode.PARAMS_ERROR, "用户消息不能为空");
@@ -113,7 +124,12 @@ public class AppController {
      * @return 应用 id
      */
     @PostMapping("/add")
-    public BaseResponse<Long> addApp(@RequestBody AppAddRequest appAddRequest, HttpServletRequest request) {
+    @Operation(
+            summary = "创建应用",
+            description = "根据初始化 Prompt 创建一个新的应用，默认使用多文件生成模式",
+            requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(description = "创建应用请求体，需提供初始化 Prompt 等必填信息")
+    )
+    public BaseResponse<Long> addApp(@RequestBody AppAddRequest appAddRequest, @Parameter(hidden = true) HttpServletRequest request) {
         ThrowUtils.throwIf(appAddRequest == null, ErrorCode.PARAMS_ERROR);
         // 参数校验
         String initPrompt = appAddRequest.getInitPrompt();
@@ -142,7 +158,12 @@ public class AppController {
      * @return 部署 URL
      */
     @PostMapping("/deploy")
-    public BaseResponse<String> deployApp(@RequestBody AppDeployRequest appDeployRequest, HttpServletRequest request) {
+    @Operation(
+            summary = "应用部署",
+            description = "部署指定应用并返回可访问的部署地址",
+            requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(description = "部署请求体，包含应用 ID 等信息")
+    )
+    public BaseResponse<String> deployApp(@RequestBody AppDeployRequest appDeployRequest, @Parameter(hidden = true) HttpServletRequest request) {
         ThrowUtils.throwIf(appDeployRequest == null, ErrorCode.PARAMS_ERROR);
         Long appId = appDeployRequest.getAppId();
         ThrowUtils.throwIf(appId == null || appId <= 0, ErrorCode.PARAMS_ERROR, "应用 ID 不能为空");
@@ -162,7 +183,12 @@ public class AppController {
      * @return 删除结果
      */
     @PostMapping("/delete")
-    public BaseResponse<Boolean> deleteApp(@RequestBody DeleteRequest deleteRequest, HttpServletRequest request) {
+    @Operation(
+            summary = "删除应用（仅本人或管理员）",
+            description = "根据应用 ID 删除应用，只有应用创建者本人或管理员可操作",
+            requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(description = "删除请求体，需提供要删除的应用 ID")
+    )
+    public BaseResponse<Boolean> deleteApp(@RequestBody DeleteRequest deleteRequest, @Parameter(hidden = true) HttpServletRequest request) {
         if (deleteRequest == null || deleteRequest.getId() <= 0) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
@@ -188,7 +214,12 @@ public class AppController {
      * @return 更新结果
      */
     @PostMapping("/update")
-    public BaseResponse<Boolean> updateApp(@RequestBody AppUpdateRequest appUpdateRequest, HttpServletRequest request) {
+    @Operation(
+            summary = "更新应用（仅本人）",
+            description = "仅允许应用创建者更新应用名称等基本信息",
+            requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(description = "更新请求体，包含应用 ID 和待更新信息")
+    )
+    public BaseResponse<Boolean> updateApp(@RequestBody AppUpdateRequest appUpdateRequest, @Parameter(hidden = true) HttpServletRequest request) {
         if (appUpdateRequest == null || appUpdateRequest.getId() == null) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
@@ -218,6 +249,7 @@ public class AppController {
      * @return 所有数据
      */
     @GetMapping("list")
+    @Operation(summary = "查询所有应用", description = "获取系统中所有应用的原始数据列表（非分页）")
     public List<App> list() {
         return appService.list();
     }
@@ -230,7 +262,12 @@ public class AppController {
      * @return 应用列表
      */
     @PostMapping("/my/list/page/vo")
-    public BaseResponse<Page<AppVO>> listMyAppVOByPage(@RequestBody AppQueryRequest appQueryRequest, HttpServletRequest request) {
+    @Operation(
+            summary = "分页获取当前用户的应用列表",
+            description = "仅返回当前登录用户创建的应用列表（封装 VO）",
+            requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(description = "查询条件，包含页码、页大小等")
+    )
+    public BaseResponse<Page<AppVO>> listMyAppVOByPage(@RequestBody AppQueryRequest appQueryRequest, @Parameter(hidden = true) HttpServletRequest request) {
         ThrowUtils.throwIf(appQueryRequest == null, ErrorCode.PARAMS_ERROR);
         User loginUser = userService.getLoginUser(request);
         // 限制每页最多 20 个
@@ -255,6 +292,11 @@ public class AppController {
      * @return 精选应用列表
      */
     @PostMapping("/good/list/page/vo")
+    @Operation(
+            summary = "分页获取精选应用列表",
+            description = "仅返回设为精选的应用列表（封装 VO）",
+            requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(description = "查询条件，包含页码、页大小等")
+    )
     public BaseResponse<Page<AppVO>> listGoodAppVOByPage(@RequestBody AppQueryRequest appQueryRequest) {
         ThrowUtils.throwIf(appQueryRequest == null, ErrorCode.PARAMS_ERROR);
         // 限制每页最多 20 个
@@ -281,6 +323,11 @@ public class AppController {
      */
     @PostMapping("/admin/delete")
     @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
+    @Operation(
+            summary = "管理员删除应用",
+            description = "管理员根据应用 ID 删除任意应用",
+            requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(description = "删除请求体，需提供要删除的应用 ID")
+    )
     public BaseResponse<Boolean> deleteAppByAdmin(@RequestBody DeleteRequest deleteRequest) {
         if (deleteRequest == null || deleteRequest.getId() <= 0) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
@@ -301,6 +348,11 @@ public class AppController {
      */
     @PostMapping("/admin/update")
     @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
+    @Operation(
+            summary = "管理员更新应用",
+            description = "管理员可更新应用的相关信息",
+            requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(description = "更新请求体，包含应用 ID 和待更新信息")
+    )
     public BaseResponse<Boolean> updateAppByAdmin(@RequestBody AppAdminUpdateRequest appAdminUpdateRequest) {
         if (appAdminUpdateRequest == null || appAdminUpdateRequest.getId() == null) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
@@ -326,6 +378,11 @@ public class AppController {
      */
     @PostMapping("/admin/list/page/vo")
     @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
+    @Operation(
+            summary = "管理员分页获取应用列表",
+            description = "根据查询条件分页获取应用列表（封装 VO），仅管理员可用",
+            requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(description = "查询条件，包含页码、页大小等")
+    )
     public BaseResponse<Page<AppVO>> listAppVOByPageByAdmin(@RequestBody AppQueryRequest appQueryRequest) {
         ThrowUtils.throwIf(appQueryRequest == null, ErrorCode.PARAMS_ERROR);
         long pageNum = appQueryRequest.getPageNum();
@@ -346,7 +403,8 @@ public class AppController {
      * @return 应用详情
      */
     @GetMapping("/get/vo")
-    public BaseResponse<AppVO> getAppVOById(long id) {
+    @Operation(summary = "根据 ID 获取应用详情", description = "根据应用 ID 获取应用的详细信息（封装 VO）")
+    public BaseResponse<AppVO> getAppVOById(@Parameter(description = "应用 ID", required = true) long id) {
         ThrowUtils.throwIf(id <= 0, ErrorCode.PARAMS_ERROR);
         // 查询数据库
         App app = appService.getById(id);
@@ -363,7 +421,8 @@ public class AppController {
      */
     @GetMapping("/admin/get/vo")
     @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
-    public BaseResponse<AppVO> getAppVOByIdByAdmin(long id) {
+    @Operation(summary = "管理员根据 ID 获取应用详情", description = "管理员可获取任意应用的详细信息（封装 VO）")
+    public BaseResponse<AppVO> getAppVOByIdByAdmin(@Parameter(description = "应用 ID", required = true) long id) {
         ThrowUtils.throwIf(id <= 0, ErrorCode.PARAMS_ERROR);
         // 查询数据库
         App app = appService.getById(id);
