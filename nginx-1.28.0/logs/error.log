@@ -1,0 +1,5 @@
+2025/08/27 14:52:47 [emerg] 11956#11348: directive "root" is not terminated by ";" in D:\Codes\yuan\yuan-ai-code-producer\nginx-1.28.0/conf/nginx.conf:46
+2025/08/27 15:03:31 [emerg] 6104#21236: bind() to 0.0.0.0:80 failed (10013: An attempt was made to access a socket in a way forbidden by its access permissions)
+2025/08/27 15:11:48 [notice] 10816#18956: signal process started
+2025/08/27 15:11:48 [error] 10816#18956: invalid PID number "" in "D:\Codes\yuan\yuan-ai-code-producer\nginx-1.28.0/logs/nginx.pid"
+2025/08/27 15:13:56 [error] 4196#23708: *1 CreateFile() "D:/Codes/yuan/yuan-ai-code-producer/tmp/code_deploy/favicon.ico" failed (2: The system cannot find the file specified), client: 127.0.0.1, server: localhost, request: "GET /favicon.ico HTTP/1.1", host: "localhost", referrer: "http://localhost/123/"

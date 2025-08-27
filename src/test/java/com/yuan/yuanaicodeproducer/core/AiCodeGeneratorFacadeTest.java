@@ -22,7 +22,8 @@ class AiCodeGeneratorFacadeTest {
         File file = aiCodeGeneratorFacade
                 .generateAndSaveCode(
                         "生成一个登录页面,不超过20行代码",
-                        CodeGenTypeEnum.HTML
+                        CodeGenTypeEnum.HTML,
+                        1L
                 );
         Assertions.assertNotNull(file);
     }
@@ -32,7 +33,8 @@ class AiCodeGeneratorFacadeTest {
         Flux<String> codeStream = aiCodeGeneratorFacade
                 .generateAndSaveCodeStream(
                         "生成一个登录页面,不超过30行代码",
-                        CodeGenTypeEnum.HTML
+                        CodeGenTypeEnum.MULTI_FILE,
+                        1L
                 );
         // 阻塞等待所有数据收集完成
         List<String> result = codeStream.collectList().block();

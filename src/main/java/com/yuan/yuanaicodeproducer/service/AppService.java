@@ -4,7 +4,9 @@ import com.mybatisflex.core.query.QueryWrapper;
 import com.mybatisflex.core.service.IService;
 import com.yuan.yuanaicodeproducer.model.dto.app.AppQueryRequest;
 import com.yuan.yuanaicodeproducer.model.entity.App;
+import com.yuan.yuanaicodeproducer.model.entity.User;
 import com.yuan.yuanaicodeproducer.model.vo.AppVO;
+import reactor.core.publisher.Flux;
 
 import java.util.List;
 
@@ -15,6 +17,23 @@ import java.util.List;
  * @since 2025
  */
 public interface AppService extends IService<App> {
+
+    /**
+     * 聊天生成代码
+     * @param appId 用户id
+     * @param userMessage 用户消息
+     * @param loginUser 登录用户
+     * @return 生成的代码（流式）
+     */
+    Flux<String> chatToGenCode(Long appId, String userMessage, User loginUser);
+
+    /**
+     * 应用部署
+     * @param appId 应用id
+     * @param loginUser 登录用户
+     * @return 可访问的部署地址
+     */
+    String deployApp(Long appId, User loginUser);
 
     /**
      * 获取应用封装类
@@ -40,11 +59,10 @@ public interface AppService extends IService<App> {
     /**
      * 构造应用查询条件
      *
-     * @param appQueryRequest
+     * @param appQueryRequest 查询条件
      * @return
      */
     QueryWrapper getQueryWrapper(AppQueryRequest appQueryRequest);
-
 
 
 }
