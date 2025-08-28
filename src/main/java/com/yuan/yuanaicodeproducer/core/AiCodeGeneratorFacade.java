@@ -1,6 +1,7 @@
 package com.yuan.yuanaicodeproducer.core;
 
 import com.yuan.yuanaicodeproducer.ai.AiCodeGeneratorService;
+import com.yuan.yuanaicodeproducer.ai.AiCodeGeneratorServiceFactory;
 import com.yuan.yuanaicodeproducer.ai.model.HtmlCodeResult;
 import com.yuan.yuanaicodeproducer.ai.model.MultiFileCodeResult;
 import com.yuan.yuanaicodeproducer.core.parser.CodeParserExecutor;
@@ -8,7 +9,6 @@ import com.yuan.yuanaicodeproducer.core.saver.CodeFileSaverExecutor;
 import com.yuan.yuanaicodeproducer.exception.BusinessException;
 import com.yuan.yuanaicodeproducer.exception.ErrorCode;
 import com.yuan.yuanaicodeproducer.model.enums.CodeGenTypeEnum;
-import jakarta.annotation.Resource;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -28,7 +28,7 @@ import java.io.File;
 @RequiredArgsConstructor
 public class AiCodeGeneratorFacade {
 
-    private final AiCodeGeneratorService aiCodeGeneratorService;
+    private final AiCodeGeneratorServiceFactory aiCodeGeneratorServiceFactory;
 
     /**
      * 统一入口：根据类型生成并保存代码
@@ -42,6 +42,8 @@ public class AiCodeGeneratorFacade {
         if (codeGenTypeEnum == null) {
             throw new BusinessException(ErrorCode.SYSTEM_ERROR, "生成类型为空");
         }
+        // 通过工厂获取不同的Ai Service服务
+        AiCodeGeneratorService aiCodeGeneratorService = aiCodeGeneratorServiceFactory.getAiCodeGeneratorService(appId);
         return switch (codeGenTypeEnum) {
             case HTML -> {
                 HtmlCodeResult htmlCodeResult = aiCodeGeneratorService.generateHtmlCode(userMessage);
@@ -70,6 +72,8 @@ public class AiCodeGeneratorFacade {
         if (codeGenTypeEnum == null) {
             throw new BusinessException(ErrorCode.SYSTEM_ERROR, "生成类型为空");
         }
+        // 通过工厂获取不同的Ai Service服务
+        AiCodeGeneratorService aiCodeGeneratorService = aiCodeGeneratorServiceFactory.getAiCodeGeneratorService(appId);
         return switch (codeGenTypeEnum) {
             // 在传统的 switch 语句中，case 是不能直接返回一个值的，
             // 你必须在每个 case 中执行一个操作并使用 break 退出。
@@ -125,6 +129,8 @@ public class AiCodeGeneratorFacade {
      */
     @Deprecated
     private Flux<String> generateAndSaveHtmlCodeStream(String userMessage) {
+        // 通过工厂获取不同的Ai Service服务
+        AiCodeGeneratorService aiCodeGeneratorService = aiCodeGeneratorServiceFactory.getAiCodeGeneratorService(0);
         Flux<String> result = aiCodeGeneratorService.generateHtmlCodeStream(userMessage);
         // 字符串拼接器，用于当流式返回所有的代码后再保存代码
         StringBuilder codeBuilder = new StringBuilder();
@@ -153,6 +159,8 @@ public class AiCodeGeneratorFacade {
      */
     @Deprecated
     private Flux<String> generateAndSaveMultiFileCodeStream(String userMessage) {
+        // 通过工厂获取不同的Ai Service服务
+        AiCodeGeneratorService aiCodeGeneratorService = aiCodeGeneratorServiceFactory.getAiCodeGeneratorService(0);
         Flux<String> result = aiCodeGeneratorService.generateMultiFileCodeStream(userMessage);
         // 字符串拼接器，用于当流式返回所有的代码后再保存代码
         StringBuilder codeBuilder = new StringBuilder();
@@ -181,6 +189,8 @@ public class AiCodeGeneratorFacade {
      */
     @Deprecated
     private File generateAndSaveHtmlCode(String userMessage) {
+        // 通过工厂获取不同的Ai Service服务
+        AiCodeGeneratorService aiCodeGeneratorService = aiCodeGeneratorServiceFactory.getAiCodeGeneratorService(0);
         HtmlCodeResult result = aiCodeGeneratorService.generateHtmlCode(userMessage);
         return CodeFileSaver.saveHtmlCodeResult(result);
     }
@@ -193,6 +203,8 @@ public class AiCodeGeneratorFacade {
      */
     @Deprecated
     private File generateAndSaveMultiFileCode(String userMessage) {
+        // 通过工厂获取不同的Ai Service服务
+        AiCodeGeneratorService aiCodeGeneratorService = aiCodeGeneratorServiceFactory.getAiCodeGeneratorService(0);
         MultiFileCodeResult result = aiCodeGeneratorService.generateMultiFileCode(userMessage);
         return CodeFileSaver.saveMultiFileCodeResult(result);
     }
