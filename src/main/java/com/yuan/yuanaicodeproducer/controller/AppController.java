@@ -45,7 +45,7 @@ import java.util.Map;
 @RestController
 @RequestMapping("/app")
 @RequiredArgsConstructor
-// @Tag(name = "应用接口", description = "与应用创建、部署、查询和生成代码相关的接口")
+@Tag(name = "AppController", description = "与应用创建、部署、查询和生成代码相关的接口")
 public class AppController {
 
     private final AppService appService;

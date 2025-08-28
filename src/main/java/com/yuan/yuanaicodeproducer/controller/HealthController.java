@@ -17,7 +17,7 @@ import io.swagger.v3.oas.annotations.Operation;
  */
 @RestController
 @RequestMapping("/health")
-// @Tag(name = "健康检查", description = "系统自检与可用性探测接口")
+@Tag(name = "HealthController", description = "系统自检与可用性探测接口")
 public class HealthController {
     @GetMapping("")
     @Operation(summary = "健康检查", description = "返回 OK 表示服务可用")

@@ -36,7 +36,7 @@ import io.swagger.v3.oas.annotations.Parameter;
 @RestController
 @RequestMapping("/user")
 @RequiredArgsConstructor
-// @Tag(name = "用户接口", description = "与用户注册、登录、查询、管理相关的接口")
+@Tag(name = "UserController", description = "与用户注册、登录、查询、管理相关的接口")
 public class UserController {
 
     private final UserService userService;
@@ -52,7 +52,7 @@ public class UserController {
             description = "根据账号与密码等信息注册用户，返回用户 ID",
             requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(description = "注册请求体，包含账号、密码、确认密码等")
     )
-    public BaseResponse<Long> register(@RequestBody UserRegisterRequest userRegisterRequest) {
+    public BaseResponse<Long> userRegister(@RequestBody UserRegisterRequest userRegisterRequest) {
         ThrowUtils.throwIf(userRegisterRequest == null, ErrorCode.PARAMS_ERROR);
         String userAccount = userRegisterRequest.getUserAccount();
         String userPassword = userRegisterRequest.getUserPassword();
@@ -73,7 +73,7 @@ public class UserController {
             description = "用户使用账号密码登录，成功后在会话中记录登录态并返回登录用户信息",
             requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(description = "登录请求体，包含账号和密码")
     )
-    public BaseResponse<LoginUserVO> login(@RequestBody UserLoginRequest userLoginRequest, @Parameter(hidden = true) HttpServletRequest request) {
+    public BaseResponse<LoginUserVO> userLogin(@RequestBody UserLoginRequest userLoginRequest, @Parameter(hidden = true) HttpServletRequest request) {
         ThrowUtils.throwIf(userLoginRequest == null, ErrorCode.PARAMS_ERROR);
         LoginUserVO loginUserVO = userService.userLogin(userLoginRequest.getUserAccount(), userLoginRequest.getUserPassword(), request);
         return ResultUtils.success(loginUserVO);
@@ -98,7 +98,7 @@ public class UserController {
      */
     @PostMapping("logout")
     @Operation(summary = "用户注销", description = "清除会话中的登录态")
-    public BaseResponse<Boolean> logout(@Parameter(hidden = true) HttpServletRequest request) {
+    public BaseResponse<Boolean> userLogout(@Parameter(hidden = true) HttpServletRequest request) {
         ThrowUtils.throwIf(request == null, ErrorCode.PARAMS_ERROR);
         boolean result = userService.userLogout(request);
         return ResultUtils.success(result);

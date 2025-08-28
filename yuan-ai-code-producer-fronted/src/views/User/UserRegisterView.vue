@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { reactive } from 'vue'
-import { register } from '@/api/userController.ts'
+import { userRegister } from '@/api/userController.ts'
 import { useRouter } from 'vue-router'
 import { message } from 'ant-design-vue'
 
@@ -16,7 +16,7 @@ const router = useRouter();
  * 提交表单
  */
 const handleSubmit = async (values: any) => {
-  const res = await register(values);
+  const res = await userRegister(values);
   // 注册成功
   if (res.data.code === 0 && res.data.data){
     message.success('注册成功，请登录')

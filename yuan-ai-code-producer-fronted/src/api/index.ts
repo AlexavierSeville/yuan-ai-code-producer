@@ -2,15 +2,15 @@
 /* eslint-disable */
 // API 更新时间：
 // API 唯一标识：
-import * as yonghujiekou from './userController.ts'
+import * as userController from './userController'
 import * as chatHistoryController from './chatHistoryController'
-import * as yingyongjiekou from './appController.ts'
-import * as jingtaiziyuanjiekou from './staticResourceController.ts'
-import * as jiankangjiancha from './healthController.ts'
+import * as appController from './appController'
+import * as staticResourceController from './staticResourceController'
+import * as healthController from './healthController'
 export default {
-  yonghujiekou,
+  userController,
   chatHistoryController,
-  yingyongjiekou,
-  jingtaiziyuanjiekou,
-  jiankangjiancha,
+  appController,
+  staticResourceController,
+  healthController,
 }

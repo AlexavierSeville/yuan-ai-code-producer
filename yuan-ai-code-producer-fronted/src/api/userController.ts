@@ -80,7 +80,7 @@ export async function listUserVoByPage(
 }
 
 /** 用户登录 用户使用账号密码登录，成功后在会话中记录登录态并返回登录用户信息 POST /user/login */
-export async function login(body: API.UserLoginRequest, options?: { [key: string]: any }) {
+export async function userLogin(body: API.UserLoginRequest, options?: { [key: string]: any }) {
   return request<API.BaseResponseLoginUserVO>('/user/login', {
     method: 'POST',
     headers: {
@@ -92,7 +92,7 @@ export async function login(body: API.UserLoginRequest, options?: { [key: string
 }
 
 /** 用户注销 清除会话中的登录态 POST /user/logout */
-export async function logout(options?: { [key: string]: any }) {
+export async function userLogout(options?: { [key: string]: any }) {
   return request<API.BaseResponseBoolean>('/user/logout', {
     method: 'POST',
     ...(options || {}),
@@ -100,7 +100,10 @@ export async function logout(options?: { [key: string]: any }) {
 }
 
 /** 用户注册 根据账号与密码等信息注册用户，返回用户 ID POST /user/register */
-export async function register(body: API.UserRegisterRequest, options?: { [key: string]: any }) {
+export async function userRegister(
+  body: API.UserRegisterRequest,
+  options?: { [key: string]: any }
+) {
   return request<API.BaseResponseLong>('/user/register', {
     method: 'POST',
     headers: {
