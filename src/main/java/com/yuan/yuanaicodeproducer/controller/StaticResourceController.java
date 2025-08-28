@@ -27,7 +27,7 @@ import java.io.File;
  */
 @RestController
 @RequestMapping("/static")
-@Tag(name = "静态资源接口", description = "根据部署 Key 提供静态资源访问与目录重定向")
+// @Tag(name = "静态资源接口", description = "根据部署 Key 提供静态资源访问与目录重定向")
 public class StaticResourceController {
 
     // 应用生成根目录（用于浏览）

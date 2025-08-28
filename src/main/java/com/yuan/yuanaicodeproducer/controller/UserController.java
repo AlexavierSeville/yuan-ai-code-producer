@@ -36,7 +36,7 @@ import io.swagger.v3.oas.annotations.Parameter;
 @RestController
 @RequestMapping("/user")
 @RequiredArgsConstructor
-@Tag(name = "用户接口", description = "与用户注册、登录、查询、管理相关的接口")
+// @Tag(name = "用户接口", description = "与用户注册、登录、查询、管理相关的接口")
 public class UserController {
 
     private final UserService userService;
