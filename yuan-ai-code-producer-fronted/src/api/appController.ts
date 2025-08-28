@@ -2,7 +2,7 @@
 /* eslint-disable */
 import request from '@/request'
 
-/** 此处后端没有提供注释 POST /app/add */
+/** 创建应用 根据初始化 Prompt 创建一个新的应用，默认使用多文件生成模式 POST /app/add */
 export async function addApp(body: API.AppAddRequest, options?: { [key: string]: any }) {
   return request<API.BaseResponseLong>('/app/add', {
     method: 'POST',
@@ -14,7 +14,7 @@ export async function addApp(body: API.AppAddRequest, options?: { [key: string]:
   })
 }
 
-/** 此处后端没有提供注释 POST /app/admin/delete */
+/** 管理员删除应用 管理员根据应用 ID 删除任意应用 POST /app/admin/delete */
 export async function deleteAppByAdmin(body: API.DeleteRequest, options?: { [key: string]: any }) {
   return request<API.BaseResponseBoolean>('/app/admin/delete', {
     method: 'POST',
@@ -26,7 +26,7 @@ export async function deleteAppByAdmin(body: API.DeleteRequest, options?: { [key
   })
 }
 
-/** 此处后端没有提供注释 GET /app/admin/get/vo */
+/** 管理员根据 ID 获取应用详情 管理员可获取任意应用的详细信息（封装 VO） GET /app/admin/get/vo */
 export async function getAppVoByIdByAdmin(
   // 叠加生成的Param类型 (非body参数swagger默认没有生成对象)
   params: API.getAppVOByIdByAdminParams,
@@ -41,7 +41,7 @@ export async function getAppVoByIdByAdmin(
   })
 }
 
-/** 此处后端没有提供注释 POST /app/admin/list/page/vo */
+/** 管理员分页获取应用列表 根据查询条件分页获取应用列表（封装 VO），仅管理员可用 POST /app/admin/list/page/vo */
 export async function listAppVoByPageByAdmin(
   body: API.AppQueryRequest,
   options?: { [key: string]: any }
@@ -56,7 +56,7 @@ export async function listAppVoByPageByAdmin(
   })
 }
 
-/** 此处后端没有提供注释 POST /app/admin/update */
+/** 管理员更新应用 管理员可更新应用的相关信息 POST /app/admin/update */
 export async function updateAppByAdmin(
   body: API.AppAdminUpdateRequest,
   options?: { [key: string]: any }
@@ -71,7 +71,7 @@ export async function updateAppByAdmin(
   })
 }
 
-/** 此处后端没有提供注释 GET /app/chat/gen/code */
+/** 应用聊天生成代码（SSE 流） 用户登录后，基于指定的应用 ID 和用户消息实时生成代码，返回 Server-Sent Events 流以便前端逐步渲染。 GET /app/chat/gen/code */
 export async function chatToGenCode(
   // 叠加生成的Param类型 (非body参数swagger默认没有生成对象)
   params: API.chatToGenCodeParams,
@@ -86,7 +86,7 @@ export async function chatToGenCode(
   })
 }
 
-/** 此处后端没有提供注释 POST /app/delete */
+/** 删除应用（仅本人或管理员） 根据应用 ID 删除应用，只有应用创建者本人或管理员可操作 POST /app/delete */
 export async function deleteApp(body: API.DeleteRequest, options?: { [key: string]: any }) {
   return request<API.BaseResponseBoolean>('/app/delete', {
     method: 'POST',
@@ -98,7 +98,7 @@ export async function deleteApp(body: API.DeleteRequest, options?: { [key: strin
   })
 }
 
-/** 此处后端没有提供注释 POST /app/deploy */
+/** 应用部署 部署指定应用并返回可访问的部署地址 POST /app/deploy */
 export async function deployApp(body: API.AppDeployRequest, options?: { [key: string]: any }) {
   return request<API.BaseResponseString>('/app/deploy', {
     method: 'POST',
@@ -110,7 +110,7 @@ export async function deployApp(body: API.AppDeployRequest, options?: { [key: st
   })
 }
 
-/** 此处后端没有提供注释 GET /app/get/vo */
+/** 根据 ID 获取应用详情 根据应用 ID 获取应用的详细信息（封装 VO） GET /app/get/vo */
 export async function getAppVoById(
   // 叠加生成的Param类型 (非body参数swagger默认没有生成对象)
   params: API.getAppVOByIdParams,
@@ -125,7 +125,7 @@ export async function getAppVoById(
   })
 }
 
-/** 此处后端没有提供注释 POST /app/good/list/page/vo */
+/** 分页获取精选应用列表 仅返回设为精选的应用列表（封装 VO） POST /app/good/list/page/vo */
 export async function listGoodAppVoByPage(
   body: API.AppQueryRequest,
   options?: { [key: string]: any }
@@ -140,7 +140,7 @@ export async function listGoodAppVoByPage(
   })
 }
 
-/** 此处后端没有提供注释 GET /app/list */
+/** 查询所有应用 获取系统中所有应用的原始数据列表（非分页） GET /app/list */
 export async function list(options?: { [key: string]: any }) {
   return request<API.App[]>('/app/list', {
     method: 'GET',
@@ -148,7 +148,7 @@ export async function list(options?: { [key: string]: any }) {
   })
 }
 
-/** 此处后端没有提供注释 POST /app/my/list/page/vo */
+/** 分页获取当前用户的应用列表 仅返回当前登录用户创建的应用列表（封装 VO） POST /app/my/list/page/vo */
 export async function listMyAppVoByPage(
   body: API.AppQueryRequest,
   options?: { [key: string]: any }
@@ -163,7 +163,7 @@ export async function listMyAppVoByPage(
   })
 }
 
-/** 此处后端没有提供注释 POST /app/update */
+/** 更新应用（仅本人） 仅允许应用创建者更新应用名称等基本信息 POST /app/update */
 export async function updateApp(body: API.AppUpdateRequest, options?: { [key: string]: any }) {
   return request<API.BaseResponseBoolean>('/app/update', {
     method: 'POST',
