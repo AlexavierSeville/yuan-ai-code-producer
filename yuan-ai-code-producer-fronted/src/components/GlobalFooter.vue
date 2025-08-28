@@ -19,9 +19,10 @@
   bottom: 0;
   width: 100%;
   text-align: center;
-  background: #fff;
-  border-top: 1px solid #f0f0f0;
-  padding: 12px 16px;
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(10px);
+  border-top: 1px solid rgba(102, 126, 234, 0.1);
+  padding: 20px; /* 更舒展的内边距 */
   z-index: 10;
 }
 

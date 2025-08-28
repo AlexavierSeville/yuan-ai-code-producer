@@ -1,3 +1,44 @@
+<template>
+  <a-layout-header class="global-header">
+    <div class="header-left" @click="router.push('/')">
+      <img class="logo" :src="resolvedLogo" alt="logo" />
+      <span class="title">{{ props.title }}</span>
+    </div>
+    <div class="header-middle">
+      <a-menu
+        theme="light"
+        mode="horizontal"
+        :selectedKeys="selectedKeys"
+        :items="filteredMenuItems"
+        @click="handleMenuClick"
+      />
+    </div>
+    <div class="header-right">
+      <div v-if="loginUserStore.loginUser.id">
+        <a-dropdown>
+          <a-space>
+            <a-avatar :src="loginUserStore.loginUser.userAvatar" />
+            <span class="user-name">
+              {{ loginUserStore.loginUser.userName ?? '竟然没有名字' }}
+            </span>
+          </a-space>
+          <template #overlay>
+            <a-menu>
+              <a-menu-item @click="doLogout">
+                <LogoutOutlined />
+                退出登录
+              </a-menu-item>
+            </a-menu>
+          </template>
+        </a-dropdown>
+      </div>
+      <div v-else>
+        <a-button type="primary" href="/user/login">登录</a-button>
+      </div>
+    </div>
+  </a-layout-header>
+</template>
+
 <script setup lang="ts">
 import { computed, watch, ref, h } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
@@ -74,6 +115,11 @@ const originItems = [
     title: '用户管理',
   },
   {
+    key: '/admin/appManage',
+    label: '应用管理',
+    title: '应用管理',
+  },
+  {
     key: 'others',
     label: h('a', { href: 'https://alexavieryuan.us.kg/', target: '_blank' }, '元仔代码站'),
     title: '元仔代码站',
@@ -98,56 +144,16 @@ const filterMenus = (menus = [] as MenuProps['items']) => {
 const filteredMenuItems = computed<MenuProps['items']>(() => filterMenus(originItems))
 </script>
 
-<template>
-  <a-layout-header class="global-header">
-    <div class="header-left" @click="router.push('/')">
-      <img class="logo" :src="resolvedLogo" alt="logo" />
-      <span class="title">{{ props.title }}</span>
-    </div>
-    <div class="header-middle">
-      <a-menu
-        theme="light"
-        mode="horizontal"
-        :selectedKeys="selectedKeys"
-        :items="filteredMenuItems"
-        @click="handleMenuClick"
-      />
-    </div>
-    <div class="header-right">
-      <div v-if="loginUserStore.loginUser.id">
-        <a-dropdown>
-          <a-space>
-            <a-avatar :src="loginUserStore.loginUser.userAvatar" />
-            <span class="user-name">
-              {{ loginUserStore.loginUser.userName ?? '竟然没有名字' }}
-            </span>
-          </a-space>
-          <template #overlay>
-            <a-menu>
-              <a-menu-item @click="doLogout">
-                <LogoutOutlined />
-                退出登录
-              </a-menu-item>
-            </a-menu>
-          </template>
-        </a-dropdown>
-      </div>
-      <div v-else>
-        <a-button type="primary" href="/user/login">登录</a-button>
-      </div>
-    </div>
-  </a-layout-header>
-</template>
-
 <style scoped>
 .global-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding: 0 16px;
-  background: #fff;
-  border-bottom: 1px solid #f0f0f0;
+  padding: 0 24px; /* 参考样式更宽的内边距 */
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid rgba(102, 126, 234, 0.1);
   height: 64px;
 }
 
@@ -159,19 +165,33 @@ const filteredMenuItems = computed<MenuProps['items']>(() => filterMenus(originI
 }
 
 .logo {
-  width: 96px;
+  width: 96px; /* 保留你的放大需求 */
+  height: auto;
 }
 
 .title {
-  color: #1f1f1f;
+  color: #1890ff; /* 参考样式的品牌色 */
   font-weight: 700;
-  font-size: 20px;
+  font-size: 20px; /* 保留已加大的字号 */
   white-space: nowrap;
+  margin: 0;
 }
 
 .header-middle {
   flex: 1;
   min-width: 0;
+}
+
+/* 去除菜单底部边线，参考样式 */
+:deep(.ant-menu-horizontal) {
+  border-bottom: none !important;
+}
+
+/* 菜单项视觉优化（保持你之前的放大与加粗） */
+:deep(.ant-menu-light.ant-menu-horizontal > .ant-menu-item),
+:deep(.ant-menu-light.ant-menu-horizontal > .ant-menu-submenu) {
+  font-size: 16px;
+  font-weight: 600;
 }
 
 .header-right {
@@ -181,13 +201,6 @@ const filteredMenuItems = computed<MenuProps['items']>(() => filterMenus(originI
 
 .user-name {
   color: #1f1f1f;
-}
-
-/* 放大并加粗菜单文字 */
-:deep(.ant-menu-light.ant-menu-horizontal > .ant-menu-item),
-:deep(.ant-menu-light.ant-menu-horizontal > .ant-menu-submenu) {
-  font-size: 16px;
-  font-weight: 600;
 }
 
 /* 响应式：窄屏隐藏标题，菜单允许横向滚动 */
