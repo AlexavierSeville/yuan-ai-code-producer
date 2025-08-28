@@ -152,8 +152,8 @@ onUnmounted(() => {
     <div class="container">
       <!-- 英雄区域 -->
       <div class="hero-section">
-        <h1 class="hero-title">AI 应用生成平台</h1>
-        <p class="hero-description">一句话轻松创建网站应用</p>
+        <h1 class="hero-title">元仔 AI 应用生成平台</h1>
+        <p class="hero-description">代码写不了一点，用一句话帮您生成</p>
       </div>
 
       <!-- 用户提示词输入框 -->
@@ -254,11 +254,7 @@ onUnmounted(() => {
   min-height: 100vh;
   --mouse-x: 50%;
   --mouse-y: 50%;
-  background:
-    linear-gradient(180deg, #f8fafc 0%, #f1f5f9 8%, #e2e8f0 20%, #cbd5e1 100%),
-    radial-gradient(circle at 20% 80%, rgba(59, 130, 246, 0.15) 0%, transparent 50%),
-    radial-gradient(circle at 80% 20%, rgba(139, 92, 246, 0.12) 0%, transparent 50%),
-    radial-gradient(circle at 40% 40%, rgba(16, 185, 129, 0.08) 0%, transparent 50%);
+  background: transparent;
   position: relative;
   overflow: hidden;
 }

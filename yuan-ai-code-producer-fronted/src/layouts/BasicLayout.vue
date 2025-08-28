@@ -21,16 +21,17 @@ const menuItems = [
 <style scoped>
 .basic-layout {
   min-height: 100vh;
-  background: #f5f5f5;
+  background: transparent;
 }
 
 .layout-content {
   margin: 16px;
   padding: 16px;
-  background: #fff;
+  background: rgba(255, 255, 255, 0.3);
   border-radius: 8px;
   /* 预留底部空间防止被固定 Footer 遮挡 */
   padding-bottom: 72px;
+  backdrop-filter: blur(10px);
 }
 
 @media (max-width: 600px) {

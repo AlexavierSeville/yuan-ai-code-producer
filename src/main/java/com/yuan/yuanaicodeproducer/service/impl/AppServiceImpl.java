@@ -16,16 +16,20 @@ import com.yuan.yuanaicodeproducer.model.dto.app.AppQueryRequest;
 import com.yuan.yuanaicodeproducer.model.entity.App;
 import com.yuan.yuanaicodeproducer.mapper.AppMapper;
 import com.yuan.yuanaicodeproducer.model.entity.User;
+import com.yuan.yuanaicodeproducer.model.enums.ChatHistoryMessageTypeEnum;
 import com.yuan.yuanaicodeproducer.model.enums.CodeGenTypeEnum;
 import com.yuan.yuanaicodeproducer.model.vo.AppVO;
 import com.yuan.yuanaicodeproducer.model.vo.UserVO;
 import com.yuan.yuanaicodeproducer.service.AppService;
+import com.yuan.yuanaicodeproducer.service.ChatHistoryService;
 import com.yuan.yuanaicodeproducer.service.UserService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 
 import java.io.File;
+import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -39,12 +43,14 @@ import java.util.stream.Collectors;
  * @author <a href="https://alexavieryuan.us.kg/">元仔学习</a>
  * @since 2025
  */
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class AppServiceImpl extends ServiceImpl<AppMapper, App>  implements AppService{
 
     private final UserService userService;
     private final AiCodeGeneratorFacade aiCodeGeneratorFacade;
+    private final ChatHistoryService chatHistoryService;
 
     @Override
     public Flux<String> chatToGenCode(Long appId, String userMessage, User loginUser) {
@@ -64,8 +70,25 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App>  implements AppS
         if (codeGenTypeEnum == null){
             throw new BusinessException(ErrorCode.SYSTEM_ERROR, "代码生成类型错误");
         }
-        // 5. 调用大模型生成代码
-        return aiCodeGeneratorFacade.generateAndSaveCodeStream(userMessage, codeGenTypeEnum, appId);
+        // 5. 在保存用户信息前，先保存用户消息到数据库
+        boolean addChatMessage = chatHistoryService.addChatMessage(appId, loginUser.getId(), userMessage, ChatHistoryMessageTypeEnum.USER.getValue());
+        // 6. 调用大模型生成代码（流式）
+        Flux<String> contentFlux = aiCodeGeneratorFacade.generateAndSaveCodeStream(userMessage, codeGenTypeEnum, appId);
+        // 7. 收集 AI 响应的内容，并且在完成后保存记录到对话历史
+        StringBuilder aiResponseBuilder = new StringBuilder();
+        return contentFlux.map(chunk->{
+            // 实时收集AI响应的内容
+            aiResponseBuilder.append(chunk);
+            return chunk;
+        }).doOnComplete(()->{
+            // 流式返回完成后，保存对话记忆
+            String aiResponse = aiResponseBuilder.toString();
+            chatHistoryService.addChatMessage(appId, loginUser.getId(), aiResponse, ChatHistoryMessageTypeEnum.AI.getValue());
+        }).doOnError(error->{
+            // 如果AI回复失败，也需要保存记录到数据库
+            String errorMessage = "AI 回复失败：" + error.getMessage();
+            chatHistoryService.addChatMessage(appId, loginUser.getId(), errorMessage, ChatHistoryMessageTypeEnum.AI.getValue());
+        });
     }
 
     @Override
@@ -175,6 +198,27 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App>  implements AppS
                 .eq("priority", priority)
                 .eq("userId", userId)
                 .orderBy(sortField, "ascend".equals(sortOrder));
+    }
+
+    // 覆盖mybatis原有的removeById方法
+    @Override
+    public boolean removeById(Serializable id) {
+        if (id == null) {
+            return false;
+        }
+        // 删除应用时，删除该应用下的所有聊天记录
+        long appId = Long.parseLong(id.toString());
+        if (appId<=0){
+            return false;
+        }
+        // 先删除关联的对话历史
+        try {
+            chatHistoryService.deleteByAppId(appId);
+        } catch (Exception e) {
+            log.error("删除应用关联的对话历史记录失败：{}", e.getMessage());
+        }
+        // 最后删除应用
+        return super.removeById(id);
     }
 
 }
