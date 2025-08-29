@@ -38,6 +38,7 @@
               <div class="message-content">{{ message.content }}</div>
               <div class="message-avatar">
                 <a-avatar :src="loginUserStore.loginUser.userAvatar" :size="48" />
+                
               </div>
             </div>
             <div v-else class="ai-message">

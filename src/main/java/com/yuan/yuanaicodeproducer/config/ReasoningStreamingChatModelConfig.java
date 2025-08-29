@@ -15,7 +15,7 @@ import org.springframework.context.annotation.Configuration;
  * @description 推理流式模型配置类
  */
 @Configuration
-@ConfigurationProperties(prefix = "langchain4j.open-ai.chat-model")
+@ConfigurationProperties(prefix = "langchain4j.open-ai.streaming-chat-model")
 @Data
 public class ReasoningStreamingChatModelConfig {
 
@@ -29,11 +29,11 @@ public class ReasoningStreamingChatModelConfig {
     @Bean
     public StreamingChatModel reasoningStreamingChatModel() {
         // 为了测试方便临时修改
-        final String modelName = "deepseek-chat";
-        final int maxTokens = 8192;
+//        final String modelName = "deepseek-chat";
+//        final int maxTokens = 8192;
         // 生产环境使用：
-        // final String modelName = "deepseek-reasoner";
-        // final int maxTokens = 32768;
+        final String modelName = "qwen-coder-turbo";
+        final int maxTokens = 8192;
         return OpenAiStreamingChatModel.builder()
                 .apiKey(apiKey)
                 .baseUrl(baseUrl)
