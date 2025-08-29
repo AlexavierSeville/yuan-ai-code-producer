@@ -106,6 +106,12 @@
             <artifactId>langchain4j-community-redis-spring-boot-starter</artifactId>
             <version>1.1.0-beta7</version>
         </dependency>
+        <!-- Spring Session + Redis 实现登录缓存 -->
+        <dependency>
+            <groupId>org.springframework.session</groupId>
+            <artifactId>spring-session-data-redis</artifactId>
+        </dependency>
+
         <!--caffeine本地缓存-->
         <dependency>
             <groupId>com.github.ben-manes.caffeine</groupId>

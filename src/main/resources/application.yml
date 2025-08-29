@@ -8,11 +8,20 @@ spring:
     password: root
   profiles:
     active: local
+  # 后端 session 配置 redis
+  session:
+    store-type: redis
+    # 30 天过期
+    timeout: 2592000
 server:
   port: 8700
   servlet:
     # 设置访问前缀
     context-path: /yuan
+    # 前端 cookie 30 天过期
+    session:
+      cookie:
+        max-age: 2592000
 
 # springdoc-openapi
 # http://localhost:8700/yuan/doc.html

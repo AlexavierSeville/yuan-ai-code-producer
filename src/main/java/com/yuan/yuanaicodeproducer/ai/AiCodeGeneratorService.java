@@ -2,7 +2,9 @@ package com.yuan.yuanaicodeproducer.ai;
 
 import com.yuan.yuanaicodeproducer.ai.model.HtmlCodeResult;
 import com.yuan.yuanaicodeproducer.ai.model.MultiFileCodeResult;
+import dev.langchain4j.service.MemoryId;
 import dev.langchain4j.service.SystemMessage;
+import dev.langchain4j.service.UserMessage;
 import reactor.core.publisher.Flux;
 
 public interface AiCodeGeneratorService {
@@ -42,5 +44,15 @@ public interface AiCodeGeneratorService {
      */
     @SystemMessage(fromResource = "prompt/codegen-multi-file-system-prompt.txt")
     Flux<String> generateMultiFileCodeStream(String userMessage);
+
+    /**
+     * 生成 Vue 项目代码（Stream）
+     * ·@MemoryId是一个用于标识当前会话的ID，用于存储会话中的上下文信息。
+     * @param userMessage 用户消息
+     * @return 生成过程的流式响应
+     */
+    @SystemMessage(fromResource = "prompt/codegen-vue-project-system-prompt.txt")
+    Flux<String> generateVueProjectCodeStream(@MemoryId long appId, @UserMessage String userMessage);
+
 }
 
