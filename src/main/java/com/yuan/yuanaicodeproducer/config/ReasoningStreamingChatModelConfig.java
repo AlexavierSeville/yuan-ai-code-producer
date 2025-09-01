@@ -32,7 +32,7 @@ public class ReasoningStreamingChatModelConfig {
 //        final String modelName = "deepseek-chat";
 //        final int maxTokens = 8192;
         // 生产环境使用：
-        final String modelName = "qwen-coder-turbo";
+        final String modelName = "qwen3-coder-30b-a3b-instruct";
         final int maxTokens = 8192;
         return OpenAiStreamingChatModel.builder()
                 .apiKey(apiKey)

@@ -109,7 +109,7 @@ const router = createRouter({
 
 ## 质量检验标准
 
-确保生成的项目能够：
+**必须**确保生成的项目能够：
 1. 通过 `npm install` 成功安装所有依赖
 2. 通过 `npm run dev` 启动开发服务器并正常运行
 3. 通过 `npm run build` 成功构建生产版本
