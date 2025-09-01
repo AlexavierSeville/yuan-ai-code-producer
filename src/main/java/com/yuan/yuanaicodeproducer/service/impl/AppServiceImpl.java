@@ -9,6 +9,7 @@ import com.mybatisflex.core.query.QueryWrapper;
 import com.mybatisflex.spring.service.impl.ServiceImpl;
 import com.yuan.yuanaicodeproducer.constant.AppConstant;
 import com.yuan.yuanaicodeproducer.core.AiCodeGeneratorFacade;
+import com.yuan.yuanaicodeproducer.core.builder.VueProjectBuilder;
 import com.yuan.yuanaicodeproducer.core.handler.StreamHandlerExecutor;
 import com.yuan.yuanaicodeproducer.exception.BusinessException;
 import com.yuan.yuanaicodeproducer.exception.ErrorCode;
@@ -53,6 +54,7 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App>  implements AppS
     private final AiCodeGeneratorFacade aiCodeGeneratorFacade;
     private final ChatHistoryService chatHistoryService;
     private final StreamHandlerExecutor streamHandlerExecutor;
+    private final VueProjectBuilder vueProjectBuilder;
 
     @Override
     public Flux<String> chatToGenCode(Long appId, String userMessage, User loginUser) {
@@ -113,7 +115,19 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App>  implements AppS
         if (!sourceDir.exists() || !sourceDir.isDirectory()) {
             throw new BusinessException(ErrorCode.SYSTEM_ERROR, "应用代码不存在，请先生成代码");
         }
-        // 7. 复制文件到部署目录
+        // 7.1 vue项目特殊处理，执行构建
+        CodeGenTypeEnum codeGenTypeEnum = CodeGenTypeEnum.getEnumByValue(codeGenType);
+        if (codeGenTypeEnum == CodeGenTypeEnum.VUE_PROJECT) {
+            // 因为这里已经点了部署了，所以不需要异步
+            boolean builtSuccess = vueProjectBuilder.buildProject(sourceDirPath);
+            ThrowUtils.throwIf(!builtSuccess, ErrorCode.SYSTEM_ERROR, "Vue构建失败,请重试");
+            // 检查目录是否存在
+            File distDir = new File(sourceDirPath, "dist");
+            ThrowUtils.throwIf(!distDir.exists(), ErrorCode.SYSTEM_ERROR, "Vue构建完成但为生成dist目录");
+            // 构建完成后，需要把构建后的文件复制到部署目录
+            sourceDir = distDir;
+        }
+        // 7.2 复制文件到部署目录
         String deployDirPath = AppConstant.CODE_DEPLOY_ROOT_DIR + File.separator + deployKey;
         try {
             FileUtil.copyContent(sourceDir, new File(deployDirPath), true);
