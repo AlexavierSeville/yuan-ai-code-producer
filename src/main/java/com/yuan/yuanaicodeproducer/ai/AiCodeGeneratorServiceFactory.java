@@ -2,7 +2,7 @@ package com.yuan.yuanaicodeproducer.ai;
 
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
-import com.yuan.yuanaicodeproducer.ai.tools.FileWriteTool;
+import com.yuan.yuanaicodeproducer.ai.tools.*;
 import com.yuan.yuanaicodeproducer.exception.BusinessException;
 import com.yuan.yuanaicodeproducer.exception.ErrorCode;
 import com.yuan.yuanaicodeproducer.model.enums.CodeGenTypeEnum;
@@ -38,6 +38,7 @@ public class AiCodeGeneratorServiceFactory {
     private final StreamingChatModel reasoningStreamingChatModel;
     private final RedisChatMemoryStore redisChatMemoryStore;
     private final ChatHistoryService chatHistoryService;
+    private final ToolManager toolManager;
 
     /**
      * AI 服务实例缓存
@@ -101,7 +102,7 @@ public class AiCodeGeneratorServiceFactory {
                     .streamingChatModel(reasoningStreamingChatModel)
                     .chatMemoryProvider(memoryId -> chatMemory)
                     // 添加工具
-                    .tools(new FileWriteTool())
+                    .tools(toolManager.getAllTools())
                     // ai出现幻觉时做的处理
                     .hallucinatedToolNameStrategy(toolExecutionRequest -> ToolExecutionResultMessage.from(
                             toolExecutionRequest, "Error: there is no tool called " + toolExecutionRequest.name()
