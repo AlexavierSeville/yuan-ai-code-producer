@@ -2,6 +2,7 @@ package com.yuan.yuanaicodeproducer.service;
 
 import com.mybatisflex.core.query.QueryWrapper;
 import com.mybatisflex.core.service.IService;
+import com.yuan.yuanaicodeproducer.model.dto.app.AppAddRequest;
 import com.yuan.yuanaicodeproducer.model.dto.app.AppQueryRequest;
 import com.yuan.yuanaicodeproducer.model.entity.App;
 import com.yuan.yuanaicodeproducer.model.entity.User;
@@ -28,6 +29,14 @@ public interface AppService extends IService<App> {
     Flux<String> chatToGenCode(Long appId, String userMessage, User loginUser);
 
     /**
+     * 创建应用
+     * @param appAddRequest 创建应用请求
+     * @param loginUser 登录用户
+     * @return 应用id
+     */
+    Long createApp(AppAddRequest appAddRequest, User loginUser);
+
+    /**
      * 应用部署
      * @param appId 应用id
      * @param loginUser 登录用户
@@ -35,6 +44,11 @@ public interface AppService extends IService<App> {
      */
     String deployApp(Long appId, User loginUser);
 
+    /**
+     * 异步生成应用截图
+     * @param appId 应用id
+     * @param appUrl 应用地址
+     */
     void generateAppScreenshotAsync(Long appId, String appUrl);
 
     /**

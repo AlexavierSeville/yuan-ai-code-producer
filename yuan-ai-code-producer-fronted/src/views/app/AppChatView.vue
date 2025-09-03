@@ -4,6 +4,9 @@
     <div class="header-bar">
       <div class="header-left">
         <h1 class="app-name">{{ appInfo?.appName || '网站生成器' }}</h1>
+        <a-tag v-if="appInfo?.codeGenType" color="blue" class="code-gen-type-tag">
+          {{ formatCodeGenType(appInfo.codeGenType) }}
+        </a-tag>
       </div>
       <div class="header-right">
         <a-button type="default" @click="showAppDetail">
@@ -11,6 +14,18 @@
             <InfoCircleOutlined />
           </template>
           应用详情
+        </a-button>
+        <a-button
+          type="primary"
+          ghost
+          @click="downloadCode"
+          :loading="downloading"
+          :disabled="!isOwner"
+        >
+          <template #icon>
+            <DownloadOutlined />
+          </template>
+          下载代码
         </a-button>
         <a-button type="primary" @click="deployApp" :loading="deploying">
           <template #icon>
@@ -33,12 +48,27 @@
               加载更多历史消息
             </a-button>
           </div>
+          
+          <!-- 滚动到顶部按钮 -->
+          <div v-if="showScrollToTop" class="scroll-to-top-container">
+            <a-button 
+              type="primary" 
+              shape="circle" 
+              size="small"
+              @click="scrollToTop"
+              class="scroll-to-top-btn"
+            >
+              <template #icon>
+                <span>↑</span>
+              </template>
+            </a-button>
+          </div>
+          
           <div v-for="(message, index) in messages" :key="index" class="message-item">
             <div v-if="message.type === 'user'" class="user-message">
               <div class="message-content">{{ message.content }}</div>
               <div class="message-avatar">
                 <a-avatar :src="loginUserStore.loginUser.userAvatar" :size="48" />
-                
               </div>
             </div>
             <div v-else class="ai-message">
@@ -50,11 +80,54 @@
                 <div v-if="message.loading" class="loading-indicator">
                   <a-spin size="small" />
                   <span>AI 正在思考...</span>
+                  <div class="loading-dots">
+                    <span class="dot"></span>
+                    <span class="dot"></span>
+                    <span class="dot"></span>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
         </div>
+
+        <!-- 选中元素信息展示 -->
+        <a-alert
+          v-if="selectedElementInfo"
+          class="selected-element-alert"
+          type="info"
+          closable
+          @close="clearSelectedElement"
+        >
+          <template #message>
+            <div class="selected-element-info">
+              <div class="element-header">
+                <span class="element-tag">
+                  选中元素：{{ selectedElementInfo.tagName.toLowerCase() }}
+                </span>
+                <span v-if="selectedElementInfo.id" class="element-id">
+                  #{{ selectedElementInfo.id }}
+                </span>
+                <span v-if="selectedElementInfo.className" class="element-class">
+                  .{{ selectedElementInfo.className.split(' ').join('.') }}
+                </span>
+              </div>
+              <div class="element-details">
+                <div v-if="selectedElementInfo.textContent" class="element-item">
+                  内容: {{ selectedElementInfo.textContent.substring(0, 50) }}
+                  {{ selectedElementInfo.textContent.length > 50 ? '...' : '' }}
+                </div>
+                <div v-if="selectedElementInfo.pagePath" class="element-item">
+                  页面路径: {{ selectedElementInfo.pagePath }}
+                </div>
+                <div class="element-item">
+                  选择器:
+                  <code class="element-selector-code">{{ selectedElementInfo.selector }}</code>
+                </div>
+              </div>
+            </div>
+          </template>
+        </a-alert>
 
         <!-- 用户消息输入框 -->
         <div class="input-container">
@@ -62,7 +135,7 @@
             <a-tooltip v-if="!isOwner" title="无法在别人的作品下对话哦~" placement="top">
               <a-textarea
                 v-model:value="userInput"
-                placeholder="请描述你想生成的网站，越详细效果越好哦"
+                :placeholder="getInputPlaceholder()"
                 :rows="4"
                 :maxlength="1000"
                 @keydown.enter.prevent="sendMessage"
@@ -72,7 +145,7 @@
             <a-textarea
               v-else
               v-model:value="userInput"
-              placeholder="请描述你想生成的网站，越详细效果越好哦"
+              :placeholder="getInputPlaceholder()"
               :rows="4"
               :maxlength="1000"
               @keydown.enter.prevent="sendMessage"
@@ -98,6 +171,19 @@
         <div class="preview-header">
           <h3>生成后的网页展示</h3>
           <div class="preview-actions">
+            <a-button
+              v-if="isOwner && previewUrl"
+              type="link"
+              :danger="isEditMode"
+              @click="toggleEditMode"
+              :class="{ 'edit-mode-active': isEditMode }"
+              style="padding: 0; height: auto; margin-right: 12px"
+            >
+              <template #icon>
+                <EditOutlined />
+              </template>
+              {{ isEditMode ? '退出编辑' : '编辑模式' }}
+            </a-button>
             <a-button v-if="previewUrl" type="link" @click="openInNewTab">
               <template #icon>
                 <ExportOutlined />
@@ -155,7 +241,7 @@ import {
   deleteApp as deleteAppApi,
 } from '@/api/appController'
 import { listAppChatHistory } from '@/api/chatHistoryController'
-import { CodeGenTypeEnum } from '@/utils/codeGenTypes'
+import { CodeGenTypeEnum, formatCodeGenType } from '@/utils/codeGenTypes'
 import request from '@/request'
 
 import MarkdownRenderer from '@/components/MarkdownRenderer.vue'
@@ -163,12 +249,15 @@ import AppDetailModal from '@/components/AppDetailModal.vue'
 import DeploySuccessModal from '@/components/DeploySuccessModal.vue'
 import aiAvatar from '@/assets/aiAvatar2.png'
 import { API_BASE_URL, getStaticPreviewUrl } from '@/config/env'
+import { VisualEditor, type ElementInfo } from '@/utils/visualEditor'
 
 import {
   CloudUploadOutlined,
   SendOutlined,
   ExportOutlined,
   InfoCircleOutlined,
+  DownloadOutlined,
+  EditOutlined,
 } from '@ant-design/icons-vue'
 
 const route = useRoute()
@@ -206,6 +295,18 @@ const previewReady = ref(false)
 const deploying = ref(false)
 const deployModalVisible = ref(false)
 const deployUrl = ref('')
+
+// 下载相关
+const downloading = ref(false)
+
+// 可视化编辑相关
+const isEditMode = ref(false)
+const selectedElementInfo = ref<ElementInfo | null>(null)
+const visualEditor = new VisualEditor({
+  onElementSelected: (elementInfo: ElementInfo) => {
+    selectedElementInfo.value = elementInfo
+  },
+})
 
 // 权限相关
 const isOwner = computed(() => {
@@ -351,14 +452,33 @@ const sendMessage = async () => {
     return
   }
 
-  const message = userInput.value.trim()
+  let message = userInput.value.trim()
+  // 如果有选中的元素，将元素信息添加到提示词中
+  if (selectedElementInfo.value) {
+    let elementContext = `\n\n选中元素信息：`
+    if (selectedElementInfo.value.pagePath) {
+      elementContext += `\n- 页面路径: ${selectedElementInfo.value.pagePath}`
+    }
+    elementContext += `\n- 标签: ${selectedElementInfo.value.tagName.toLowerCase()}\n- 选择器: ${selectedElementInfo.value.selector}`
+    if (selectedElementInfo.value.textContent) {
+      elementContext += `\n- 当前内容: ${selectedElementInfo.value.textContent.substring(0, 100)}`
+    }
+    message += elementContext
+  }
   userInput.value = ''
-
-  // 添加用户消息
+  // 添加用户消息（包含元素信息）
   messages.value.push({
     type: 'user',
     content: message,
   })
+
+  // 发送消息后，清除选中元素并退出编辑模式
+  if (selectedElementInfo.value) {
+    clearSelectedElement()
+    if (isEditMode.value) {
+      toggleEditMode()
+    }
+  }
 
   // 添加AI消息占位符
   const aiMessageIndex = messages.value.length
@@ -486,6 +606,18 @@ const scrollToBottom = () => {
   }
 }
 
+// 滚动到顶部
+const scrollToTop = () => {
+  if (messagesContainer.value) {
+    messagesContainer.value.scrollTop = 0
+  }
+}
+
+// 显示滚动到顶部按钮
+const showScrollToTop = computed(() => {
+  return messagesContainer.value && messagesContainer.value.scrollTop > 100
+})
+
 // 部署应用
 const deployApp = async () => {
   if (!appId.value) {
@@ -531,6 +663,11 @@ const openDeployedSite = () => {
 // iframe加载完成
 const onIframeLoad = () => {
   previewReady.value = true
+  const iframe = document.querySelector('.preview-iframe') as HTMLIFrameElement
+  if (iframe) {
+    visualEditor.init(iframe)
+    visualEditor.onIframeLoad()
+  }
 }
 
 // 编辑应用
@@ -559,9 +696,81 @@ const deleteApp = async () => {
   }
 }
 
+// 下载代码
+const downloadCode = async () => {
+  if (!appId.value) {
+    message.error('应用ID不存在')
+    return
+  }
+  downloading.value = true
+  try {
+    const API_BASE_URL = request.defaults.baseURL || ''
+    const url = `${API_BASE_URL}/app/download/${appId.value}`
+    const response = await fetch(url, {
+      method: 'GET',
+      credentials: 'include',
+    })
+    if (!response.ok) {
+      throw new Error(`下载失败: ${response.status}`)
+    }
+    // 获取文件名
+    const contentDisposition = response.headers.get('Content-Disposition')
+    const fileName = contentDisposition?.match(/filename="(.+)"/)?.[1] || `app-${appId.value}.zip`
+    // 下载文件
+    const blob = await response.blob()
+    const downloadUrl = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = downloadUrl
+    link.download = fileName
+    link.click()
+    // 清理
+    URL.revokeObjectURL(downloadUrl)
+    message.success('代码下载成功')
+  } catch (error) {
+    console.error('下载失败：', error)
+    message.error('下载失败，请重试')
+  } finally {
+    downloading.value = false
+  }
+}
+
+// 可视化编辑相关函数
+const toggleEditMode = () => {
+  // 检查 iframe 是否已经加载
+  const iframe = document.querySelector('.preview-iframe') as HTMLIFrameElement
+  if (!iframe) {
+    message.warning('请等待页面加载完成')
+    return
+  }
+  // 确保 visualEditor 已初始化
+  if (!previewReady.value) {
+    message.warning('请等待页面加载完成')
+    return
+  }
+  const newEditMode = visualEditor.toggleEditMode()
+  isEditMode.value = newEditMode
+}
+
+const clearSelectedElement = () => {
+  selectedElementInfo.value = null
+  visualEditor.clearSelection()
+}
+
+const getInputPlaceholder = () => {
+  if (selectedElementInfo.value) {
+    return `正在编辑 ${selectedElementInfo.value.tagName.toLowerCase()} 元素，描述您想要的修改...`
+  }
+  return '请描述你想生成的网站，越详细效果越好哦'
+}
+
 // 页面加载时获取应用信息
 onMounted(() => {
   fetchAppInfo()
+
+  // 监听 iframe 消息
+  window.addEventListener('message', (event) => {
+    visualEditor.handleIframeMessage(event)
+  })
 })
 
 // 清理资源
@@ -572,7 +781,7 @@ onUnmounted(() => {
 
 <style scoped>
 #appChatPage {
-  height: 100vh;
+  height: 87vh;
   display: flex;
   flex-direction: column;
   padding: 16px;
@@ -585,6 +794,10 @@ onUnmounted(() => {
   justify-content: space-between;
   align-items: center;
   padding: 12px 16px;
+}
+
+.code-gen-type-tag {
+  font-size: 12px;
 }
 
 .header-left {
@@ -680,11 +893,62 @@ onUnmounted(() => {
   color: #666;
 }
 
+.loading-dots {
+  display: flex;
+  gap: 4px;
+}
+
+.dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: #1890ff;
+  animation: loading-dots 1.4s infinite ease-in-out;
+}
+
+.dot:nth-child(1) {
+  animation-delay: -0.32s;
+}
+
+.dot:nth-child(2) {
+  animation-delay: -0.16s;
+}
+
+@keyframes loading-dots {
+  0%, 80%, 100% {
+    transform: scale(0);
+    opacity: 0.5;
+  }
+  40% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
 /* 加载更多按钮 */
 .load-more-container {
   text-align: center;
   padding: 8px 0;
   margin-bottom: 16px;
+}
+
+/* 滚动到顶部按钮 */
+.scroll-to-top-container {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 10;
+}
+
+.scroll-to-top-btn {
+  background-color: #1890ff;
+  border-color: #1890ff;
+  color: white;
+}
+
+.scroll-to-top-btn:hover {
+  background-color: #40a9ff;
+  border-color: #40a9ff;
 }
 
 /* 输入区域 */
@@ -776,6 +1040,71 @@ onUnmounted(() => {
   border: none;
 }
 
+/* 选中元素信息样式 */
+.selected-element-alert {
+  margin: 0 16px;
+}
+
+.selected-element-info {
+  line-height: 1.4;
+}
+
+.element-header {
+  margin-bottom: 8px;
+}
+
+.element-details {
+  margin-top: 8px;
+}
+
+.element-item {
+  margin-bottom: 4px;
+  font-size: 13px;
+}
+
+.element-item:last-child {
+  margin-bottom: 0;
+}
+
+.element-tag {
+  font-family: 'Monaco', 'Menlo', monospace;
+  font-size: 14px;
+  font-weight: 600;
+  color: #007bff;
+}
+
+.element-id {
+  color: #28a745;
+  margin-left: 4px;
+}
+
+.element-class {
+  color: #ffc107;
+  margin-left: 4px;
+}
+
+.element-selector-code {
+  font-family: 'Monaco', 'Menlo', monospace;
+  background: #f6f8fa;
+  padding: 2px 4px;
+  border-radius: 3px;
+  font-size: 12px;
+  color: #d73a49;
+  border: 1px solid #e1e4e8;
+}
+
+/* 编辑模式按钮样式 */
+.edit-mode-active {
+  background-color: #52c41a !important;
+  border-color: #52c41a !important;
+  color: white !important;
+}
+
+.edit-mode-active:hover {
+  background-color: #73d13d !important;
+  border-color: #73d13d !important;
+}
+
 /* 响应式设计 */
 @media (max-width: 1024px) {
   .main-content {
@@ -786,6 +1115,10 @@ onUnmounted(() => {
   .preview-section {
     flex: none;
     height: 50vh;
+  }
+  
+  #appChatPage {
+    height: 95vh;
   }
 }
 
@@ -805,6 +1138,11 @@ onUnmounted(() => {
 
   .message-content {
     max-width: 85%;
+  }
+  
+  #appChatPage {
+    height: 98vh;
+    padding: 12px;
   }
 }
 </style>

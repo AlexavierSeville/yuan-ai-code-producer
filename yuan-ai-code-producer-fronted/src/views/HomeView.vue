@@ -114,16 +114,25 @@ const viewChat = (appId: string | number | undefined) => {
   }
 }
 
-// 查看作品（无 getDeployUrl，尽量兼容常见情况）
+// 查看作品（通过 nginx 访问部署后的网页）
 const viewWork = (app: API.AppVO) => {
   const key = app.deployKey
-  if (!key) return
-  if (key.startsWith('http://') || key.startsWith('https://') || key.startsWith('/')) {
-    window.open(key, '_blank')
-  } else {
-    // 如果后端返回的是相对key，这里暂时无法推断域名，给出提示
-    message.info('暂不支持预览该作品（缺少完整访问地址）')
+  if (!key) {
+    message.warning('该应用尚未部署，无法预览')
+    return
   }
+  
+  // 如果 deployKey 已经是完整URL，直接使用
+  if (key.startsWith('http://') || key.startsWith('https://')) {
+    window.open(key, '_blank')
+    return
+  }
+  
+  // 通过 nginx 访问部署后的网页
+  // nginx 配置在 80 端口，根目录为 code_deploy
+  // 访问格式：http://localhost/{deployKey}/
+  const nginxUrl = `http://localhost/${key}/`
+  window.open(nginxUrl, '_blank')
 }
 
 // 鼠标跟随光效

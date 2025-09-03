@@ -1,7 +1,10 @@
 <template>
   <a-layout-header class="global-header">
     <div class="header-left" @click="router.push('/')">
-      <img class="logo" :src="resolvedLogo" alt="logo" />
+      <div class="logo-container">
+        <img class="logo" :src="resolvedLogo" alt="logo" />
+        <div class="logo-glow"></div>
+      </div>
       <span class="title">{{ props.title }}</span>
     </div>
     <div class="header-middle">
@@ -11,13 +14,14 @@
         :selectedKeys="selectedKeys"
         :items="filteredMenuItems"
         @click="handleMenuClick"
+        class="animated-menu"
       />
     </div>
     <div class="header-right">
-      <div v-if="loginUserStore.loginUser.id">
+      <div v-if="loginUserStore.loginUser.id" class="user-section">
         <a-dropdown>
-          <a-space>
-            <a-avatar :src="loginUserStore.loginUser.userAvatar" />
+          <a-space class="user-info">
+            <a-avatar :src="loginUserStore.loginUser.userAvatar" class="user-avatar" />
             <span class="user-name">
               {{ loginUserStore.loginUser.userName ?? '竟然没有名字' }}
             </span>
@@ -32,8 +36,8 @@
           </template>
         </a-dropdown>
       </div>
-      <div v-else>
-        <a-button type="primary" href="/user/login">登录</a-button>
+      <div v-else class="login-section">
+        <a-button type="primary" href="/user/login" class="login-btn">登录</a-button>
       </div>
     </div>
   </a-layout-header>
@@ -105,24 +109,30 @@ const doLogout = async () => {
 const originItems = [
   {
     key: '/',
-    icon: () => h(HomeOutlined),
+    icon: () => h('span', { class: 'menu-icon emoji-icon' }, '🏠'),
     label: '主页',
     title: '主页',
   },
   {
     key: '/admin/userManage',
+    icon: () => h('span', { class: 'menu-icon emoji-icon' }, '👥'),
     label: '用户管理',
     title: '用户管理',
   },
   {
     key: '/admin/appManage',
+    icon: () => h('span', { class: 'menu-icon emoji-icon' }, '📱'),
     label: '应用管理',
     title: '应用管理',
   },
   {
     key: 'others',
-    label: h('a', { href: 'https://alexavieryuan.us.kg/', target: '_blank' }, '元仔代码站'),
+    icon: () => h('span', { class: 'menu-icon emoji-icon' }, '💻'),
+    label: '元仔代码站',
     title: '元仔代码站',
+    onClick: () => {
+      window.open('https://alexavieryuan.us.kg/', '_blank')
+    }
   },
 ]
 
@@ -150,48 +160,253 @@ const filteredMenuItems = computed<MenuProps['items']>(() => filterMenus(originI
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding: 0 24px; /* 参考样式更宽的内边距 */
-  background: rgba(255, 255, 255, 0.9);
-  backdrop-filter: blur(8px);
-  border-bottom: 1px solid rgba(102, 126, 234, 0.1);
+  padding: 0 24px;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid rgba(102, 126, 234, 0.15);
   height: 64px;
+  position: relative;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+}
+
+.global-header:hover {
+  background: rgba(255, 255, 255, 0.98);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+  transform: translateY(-1px);
 }
 
 .header-left {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 16px;
   cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.header-left:hover {
+  transform: scale(1.02);
+}
+
+.logo-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .logo {
-  width: 96px; /* 保留你的放大需求 */
+  width: 96px;
   height: auto;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  filter: drop-shadow(0 2px 8px rgba(24, 144, 255, 0.2));
+}
+
+.logo-glow {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(circle, rgba(24, 144, 255, 0.1) 0%, transparent 70%);
+  border-radius: 50%;
+  transform: translate(-50%, -50%) scale(0);
+  transition: all 0.3s ease;
+  pointer-events: none;
+}
+
+.header-left:hover .logo-glow {
+  transform: translate(-50%, -50%) scale(1.2);
+  opacity: 1;
+}
+
+.header-left:hover .logo {
+  transform: scale(1.05) rotate(2deg);
+  filter: drop-shadow(0 4px 16px rgba(24, 144, 255, 0.4));
 }
 
 .title {
-  color: #1890ff; /* 参考样式的品牌色 */
+  color: #1890ff;
   font-weight: 700;
-  font-size: 20px; /* 保留已加大的字号 */
+  font-size: 20px;
   white-space: nowrap;
   margin: 0;
+  background: linear-gradient(135deg, #1890ff 0%, #722ed1 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+.title::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  width: 0;
+  height: 2px;
+  background: linear-gradient(135deg, #1890ff 0%, #722ed1 100%);
+  transition: width 0.3s ease;
+}
+
+.header-left:hover .title::after {
+  width: 100%;
 }
 
 .header-middle {
   flex: 1;
   min-width: 0;
+  display: flex;
+  justify-content: center; /* 菜单居中 */
+  align-items: center;
 }
 
-/* 去除菜单底部边线，参考样式 */
+/* 菜单容器样式 */
+:deep(.ant-menu) {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  max-width: 600px; /* 限制最大宽度，避免过宽 */
+}
+
+/* 菜单动画效果 */
 :deep(.ant-menu-horizontal) {
   border-bottom: none !important;
+  background: transparent;
 }
 
-/* 菜单项视觉优化（保持你之前的放大与加粗） */
 :deep(.ant-menu-light.ant-menu-horizontal > .ant-menu-item),
 :deep(.ant-menu-light.ant-menu-horizontal > .ant-menu-submenu) {
-  font-size: 16px;
+  font-size: 18px; /* 从16px增加到18px */
   font-weight: 600;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+  padding: 0 24px; /* 增加左右内边距，让选项更宽 */
+  height: 64px; /* 确保高度与header一致 */
+  line-height: 64px; /* 垂直居中 */
+  min-width: 120px; /* 设置最小宽度 */
+  text-align: center; /* 文字居中 */
+}
+
+:deep(.ant-menu-light.ant-menu-horizontal > .ant-menu-item::before),
+:deep(.ant-menu-light.ant-menu-horizontal > .ant-menu-submenu::before) {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  width: 0;
+  height: 3px;
+  background: linear-gradient(135deg, #1890ff 0%, #722ed1 100%);
+  transition: all 0.3s ease;
+  transform: translateX(-50%);
+}
+
+:deep(.ant-menu-light.ant-menu-horizontal > .ant-menu-item:hover::before),
+:deep(.ant-menu-light.ant-menu-horizontal > .ant-menu-submenu:hover::before) {
+  width: 100%;
+}
+
+:deep(.ant-menu-light.ant-menu-horizontal > .ant-menu-item:hover),
+:deep(.ant-menu-light.ant-menu-horizontal > .ant-menu-submenu:hover) {
+  color: #1890ff;
+  transform: translateY(-2px);
+  text-shadow: 0 2px 8px rgba(24, 144, 255, 0.3);
+}
+
+:deep(.ant-menu-light.ant-menu-horizontal > .ant-menu-item-selected) {
+  color: #1890ff;
+  background: rgba(24, 144, 255, 0.05);
+  border-radius: 6px;
+}
+
+:deep(.ant-menu-light.ant-menu-horizontal > .ant-menu-item-selected::before) {
+  width: 100%;
+}
+
+/* 子菜单样式优化 */
+:deep(.ant-menu-submenu-title) {
+  font-size: 18px !important; /* 确保子菜单标题也是18px */
+  padding: 0 24px !important;
+  height: 64px !important;
+  line-height: 64px !important;
+  min-width: 120px !important;
+}
+
+/* 响应式调整 */
+@media (max-width: 1200px) {
+  .global-header {
+    padding: 0 20px;
+  }
+  
+  :deep(.ant-menu-light.ant-menu-horizontal > .ant-menu-item),
+  :deep(.ant-menu-light.ant-menu-horizontal > .ant-menu-submenu) {
+    padding: 0 20px;
+    min-width: 110px;
+  }
+  
+  :deep(.ant-menu-submenu-title) {
+    padding: 0 20px !important;
+    min-width: 110px !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .title {
+    display: none;
+  }
+  
+  .global-header {
+    padding: 0 16px;
+  }
+  
+  :deep(.ant-menu-light.ant-menu-horizontal > .ant-menu-item),
+  :deep(.ant-menu-light.ant-menu-horizontal > .ant-menu-submenu) {
+    font-size: 16px;
+    padding: 0 16px;
+    min-width: 100px;
+  }
+  
+  :deep(.ant-menu-submenu-title) {
+    font-size: 16px !important;
+    padding: 0 16px !important;
+    min-width: 100px !important;
+  }
+  
+  :deep(.ant-menu) {
+    max-width: 100%;
+    overflow-x: auto;
+    justify-content: flex-start; /* 移动端左对齐 */
+  }
+}
+
+@media (max-width: 600px) {
+  .global-header {
+    padding: 0 12px;
+  }
+  
+  :deep(.ant-menu-light.ant-menu-horizontal > .ant-menu-item),
+  :deep(.ant-menu-light.ant-menu-horizontal > .ant-menu-submenu) {
+    font-size: 15px;
+    padding: 0 12px;
+    min-width: 80px;
+  }
+  
+  :deep(.ant-menu-submenu-title) {
+    font-size: 15px !important;
+    padding: 0 12px !important;
+    min-width: 80px !important;
+  }
+  
+  .header-left {
+    gap: 12px;
+  }
+  
+  .logo {
+    width: 80px; /* 移动端logo稍微小一点 */
+  }
 }
 
 .header-right {
@@ -199,17 +414,516 @@ const filteredMenuItems = computed<MenuProps['items']>(() => filterMenus(originI
   align-items: center;
 }
 
-.user-name {
-  color: #1f1f1f;
+.user-section {
+  transition: all 0.3s ease;
 }
 
-/* 响应式：窄屏隐藏标题，菜单允许横向滚动 */
+.user-info {
+  padding: 8px 12px;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.user-info:hover {
+  background: rgba(24, 144, 255, 0.05);
+  transform: translateY(-1px);
+}
+
+.user-avatar {
+  transition: all 0.3s ease;
+  border: 2px solid transparent;
+}
+
+.user-info:hover .user-avatar {
+  transform: scale(1.1);
+  border-color: rgba(24, 144, 255, 0.3);
+  box-shadow: 0 4px 12px rgba(24, 144, 255, 0.2);
+}
+
+.user-name {
+  color: #1f1f1f;
+  font-weight: 500;
+  transition: color 0.3s ease;
+}
+
+.user-info:hover .user-name {
+  color: #1890ff;
+}
+
+.login-section {
+  transition: all 0.3s ease;
+}
+
+.login-btn {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border-radius: 8px;
+  font-weight: 600;
+  box-shadow: 0 2px 8px rgba(24, 144, 255, 0.2);
+}
+
+.login-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(24, 144, 255, 0.4);
+}
+
+/* 响应式设计 */
 @media (max-width: 600px) {
   .title {
     display: none;
   }
+  
+  .global-header {
+    padding: 0 16px;
+  }
+  
   :deep(.ant-menu) {
     overflow-x: auto;
+  }
+}
+
+/* 添加进入动画 */
+@keyframes slideInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.global-header {
+  animation: slideInDown 0.6s ease-out;
+}
+
+/* 添加logo呼吸效果 */
+@keyframes logoBreath {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.02);
+  }
+}
+
+.logo {
+  animation: logoBreath 3s ease-in-out infinite;
+}
+
+.header-left:hover .logo {
+  animation: none;
+}
+
+/* Emoji图标样式和动态效果 */
+.menu-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  margin-right: 8px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.emoji-icon {
+  filter: grayscale(0.2);
+  transform: scale(1);
+}
+
+/* 菜单项悬停效果 */
+:deep(.ant-menu-light.ant-menu-horizontal > .ant-menu-item:hover .emoji-icon),
+:deep(.ant-menu-light.ant-menu-horizontal > .ant-menu-submenu:hover .emoji-icon) {
+  transform: scale(1.15) rotate(3deg);
+  filter: grayscale(0) drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+  transition: all 0.3s ease;
+}
+
+@keyframes emojiWiggle {
+  0%, 100% {
+    transform: scale(1.15) rotate(2deg);
+  }
+  50% {
+    transform: scale(1.15) rotate(-2deg);
+  }
+}
+
+/* 菜单项悬停时的图标脉冲效果 */
+:deep(.ant-menu-light.ant-menu-horizontal > .ant-menu-item:hover .emoji-icon),
+:deep(.ant-menu-light.ant-menu-horizontal > .ant-menu-submenu:hover .emoji-icon) {
+  filter: drop-shadow(0 0 4px rgba(24, 144, 255, 0.2));
+  text-shadow: 0 0 4px rgba(24, 144, 255, 0.3);
+}
+
+@keyframes emojiPulse {
+  0%, 100% {
+    transform: scale(1.15) rotate(3deg);
+  }
+  50% {
+    transform: scale(1.18) rotate(4deg);
+  }
+}
+
+/* 菜单项悬停时的图标弹跳效果 */
+:deep(.ant-menu-light.ant-menu-horizontal > .ant-menu-item:hover .emoji-icon),
+:deep(.ant-menu-light.ant-menu-horizontal > .ant-menu-submenu:hover .emoji-icon) {
+  animation: emojiBounce 3s ease-in-out infinite;
+}
+
+@keyframes emojiSpin {
+  from {
+    transform: scale(1.3) rotate(10deg);
+  }
+  to {
+    transform: scale(1.3) rotate(370deg);
+  }
+}
+
+/* 减少图标的旋转动画，让效果更平滑 */
+:deep(.ant-menu-light.ant-menu-horizontal > .ant-menu-item:hover .emoji-icon),
+:deep(.ant-menu-light.ant-menu-horizontal > .ant-menu-submenu:hover .emoji-icon) {
+  animation: emojiBounce 2s ease-in-out infinite;
+}
+
+@keyframes emojiBounce {
+  0%, 20%, 53%, 80%, 100% {
+    transform: scale(1.15) rotate(3deg) translateY(0);
+  }
+  40%, 43% {
+    transform: scale(1.15) rotate(3deg) translateY(-1.5px);
+  }
+  70% {
+    transform: scale(1.15) rotate(3deg) translateY(-0.8px);
+  }
+  90% {
+    transform: scale(1.15) rotate(3deg) translateY(-0.3px);
+  }
+}
+
+/* 选中状态的emoji效果 */
+:deep(.ant-menu-light.ant-menu-horizontal > .ant-menu-item-selected .emoji-icon),
+:deep(.ant-menu-light.ant-menu-horizontal > .ant-menu-submenu-selected .emoji-icon) {
+  transform: scale(1.1);
+  filter: grayscale(0) drop-shadow(0 2px 6px rgba(24, 144, 255, 0.3));
+  animation: emojiBounce 0.6s ease-out;
+}
+
+/* Emoji弹跳动画 */
+@keyframes emojiBounce {
+  0%, 20%, 53%, 80%, 100% {
+    transform: scale(1.1) translateY(0);
+  }
+  40%, 43% {
+    transform: scale(1.1) translateY(-8px);
+  }
+  70% {
+    transform: scale(1.1) translateY(-4px);
+  }
+  90% {
+    transform: scale(1.1) translateY(-2px);
+  }
+}
+
+/* 菜单项悬停时的整体效果增强 */
+:deep(.ant-menu-light.ant-menu-horizontal > .ant-menu-item:hover),
+:deep(.ant-menu-light.ant-menu-horizontal > .ant-menu-submenu:hover) {
+  background: linear-gradient(135deg, rgba(24, 144, 255, 0.05), rgba(24, 144, 255, 0.1));
+  transform: translateY(-1px) scale(1.01);
+  box-shadow: 0 2px 8px rgba(24, 144, 255, 0.1);
+  border-radius: 6px 6px 0 0;
+  transition: all 0.3s ease;
+}
+
+@keyframes menuHover {
+  0% {
+    transform: translateY(0) scale(1);
+  }
+  100% {
+    transform: translateY(-1px) scale(1.01);
+  }
+}
+
+@keyframes backgroundShift {
+  0%, 100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+/* 减少背景动画，让效果更平滑 */
+:deep(.ant-menu-light.ant-menu-horizontal > .ant-menu-item:hover),
+:deep(.ant-menu-light.ant-menu-horizontal > .ant-menu-submenu:hover) {
+  animation: none;
+}
+
+/* 菜单项悬停时的背景动画效果 */
+:deep(.ant-menu-light.ant-menu-horizontal > .ant-menu-item:hover),
+:deep(.ant-menu-light.ant-menu-horizontal > .ant-menu-submenu:hover) {
+  background: linear-gradient(135deg, 
+    rgba(24, 144, 255, 0.05), 
+    rgba(24, 144, 255, 0.1)
+  );
+  position: relative;
+  overflow: hidden;
+}
+
+/* 菜单项悬停时的光波效果 */
+:deep(.ant-menu-light.ant-menu-horizontal > .ant-menu-item:hover::after),
+:deep(.ant-menu-light.ant-menu-horizontal > .ant-menu-item:hover::before),
+:deep(.ant-menu-light.ant-menu-horizontal > .ant-menu-submenu:hover::after) {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(24, 144, 255, 0.03), transparent);
+  animation: lightWave 4s ease-in-out infinite;
+}
+
+@keyframes lightWave {
+  0% {
+    left: -100%;
+  }
+  100% {
+    left: 100%;
+  }
+}
+
+/* 减少光波动画，让效果更平滑 */
+:deep(.ant-menu-light.ant-menu-horizontal > .ant-menu-item:hover::after),
+:deep(.ant-menu-light.ant-menu-horizontal > .ant-menu-item:hover::before),
+:deep(.ant-menu-light.ant-menu-horizontal > .ant-menu-submenu:hover::after) {
+  animation: none;
+}
+
+/* 菜单项悬停时的文字颜色变化 */
+:deep(.ant-menu-light.ant-menu-horizontal > .ant-menu-item:hover .ant-menu-title-content),
+:deep(.ant-menu-light.ant-menu-horizontal > .ant-menu-submenu:hover .ant-menu-title-content) {
+  color: #1890ff !important;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  transform: scale(1.02);
+}
+
+@keyframes textGradient {
+  0%, 100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+/* 减少文字渐变动画，让效果更平滑 */
+:deep(.ant-menu-light.ant-menu-horizontal > .ant-menu-item:hover .ant-menu-title-content),
+:deep(.ant-menu-light.ant-menu-horizontal > .ant-menu-submenu:hover .ant-menu-title-content) {
+  animation: none;
+}
+
+/* 菜单项悬停时的文字动画效果 */
+:deep(.ant-menu-light.ant-menu-horizontal > .ant-menu-item:hover .ant-menu-title-content),
+:deep(.ant-menu-light.ant-menu-horizontal > .ant-menu-submenu:hover .ant-menu-title-content) {
+  transform: scale(1.02);
+}
+
+/* 选中状态的菜单项效果 */
+:deep(.ant-menu-light.ant-menu-horizontal > .ant-menu-item-selected),
+:deep(.ant-menu-light.ant-menu-horizontal > .ant-menu-submenu-selected) {
+  background: linear-gradient(135deg, rgba(24, 144, 255, 0.1), rgba(24, 144, 255, 0.15));
+  border-bottom: 2px solid #1890ff;
+  box-shadow: 0 2px 8px rgba(24, 144, 255, 0.2);
+  position: relative;
+}
+
+/* 选中状态的渐变边框效果 */
+:deep(.ant-menu-light.ant-menu-horizontal > .ant-menu-item-selected::before),
+:deep(.ant-menu-light.ant-menu-horizontal > .ant-menu-submenu-selected::before) {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, #1890ff, #40a9ff, #1890ff);
+  background-size: 200% 100%;
+  animation: gradientMove 2s ease-in-out infinite;
+}
+
+@keyframes gradientMove {
+  0%, 100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+/* 菜单项点击时的波纹效果 */
+:deep(.ant-menu-light.ant-menu-horizontal > .ant-menu-item:active),
+:deep(.ant-menu-light.ant-menu-horizontal > .ant-menu-submenu:active) {
+  transform: scale(0.98);
+  transition: transform 0.1s ease;
+}
+
+/* 菜单项悬停时的波纹效果 */
+:deep(.ant-menu-light.ant-menu-horizontal > .ant-menu-item:hover::before),
+:deep(.ant-menu-light.ant-menu-horizontal > .ant-menu-submenu:hover::before) {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  background: rgba(24, 144, 255, 0.03);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  animation: ripple 1.5s ease-out;
+}
+
+@keyframes ripple {
+  to {
+    width: 100px;
+    height: 100px;
+    opacity: 0;
+  }
+}
+
+/* 减少波纹动画，让效果更平滑 */
+:deep(.ant-menu-light.ant-menu-horizontal > .ant-menu-item:hover::before),
+:deep(.ant-menu-light.ant-menu-horizontal > .ant-menu-submenu:hover::before) {
+  animation: none;
+}
+
+/* 菜单项悬停时的光晕效果 */
+:deep(.ant-menu-light.ant-menu-horizontal > .ant-menu-item:hover::after),
+:deep(.ant-menu-light.ant-menu-horizontal > .ant-menu-submenu:hover::after) {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: radial-gradient(circle at center, rgba(24, 144, 255, 0.03) 0%, transparent 70%);
+  border-radius: 6px 6px 0 0;
+  opacity: 0;
+  animation: glowPulse 4s ease-in-out infinite;
+}
+
+/* 菜单项悬停时的边框效果 */
+:deep(.ant-menu-light.ant-menu-horizontal > .ant-menu-item:hover::before),
+:deep(.ant-menu-light.ant-menu-horizontal > .ant-menu-submenu:hover::before) {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border: 1px solid rgba(24, 144, 255, 0.1);
+  border-radius: 6px 6px 0 0;
+  opacity: 0;
+  animation: borderFadeIn 0.5s ease-out forwards;
+}
+
+/* 菜单项悬停时的颜色变化效果 */
+:deep(.ant-menu-light.ant-menu-horizontal > .ant-menu-item:hover),
+:deep(.ant-menu-light.ant-menu-horizontal > .ant-menu-submenu:hover) {
+  color: #1890ff;
+  transition: color 0.3s ease;
+}
+
+/* 菜单项悬停时的图标颜色变化效果 */
+:deep(.ant-menu-light.ant-menu-horizontal > .ant-menu-item:hover .emoji-icon),
+:deep(.ant-menu-light.ant-menu-horizontal > .ant-menu-submenu:hover .emoji-icon) {
+  filter: saturate(1.1) brightness(1.05);
+  transition: all 0.3s ease;
+  transform: scale(1.15) rotate(3deg);
+}
+
+@keyframes emojiColorShift {
+  0%, 100% {
+    filter: hue-rotate(0deg) saturate(1.1) brightness(1.05);
+  }
+  50% {
+    filter: hue-rotate(30deg) saturate(1.2) brightness(1.1);
+  }
+}
+
+@keyframes borderFadeIn {
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes glowPulse {
+  0%, 100% {
+    opacity: 0;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+/* 链接菜单项的特殊样式 */
+:deep(.ant-menu-light.ant-menu-horizontal > .ant-menu-item a) {
+  display: flex;
+  align-items: center;
+  color: inherit;
+  text-decoration: none;
+}
+
+:deep(.ant-menu-light.ant-menu-horizontal > .ant-menu-item a:hover) {
+  color: #1890ff;
+}
+
+/* 响应式emoji图标 */
+@media (max-width: 768px) {
+  .menu-icon {
+    font-size: 16px;
+    margin-right: 6px;
+  }
+}
+
+/* 菜单项进入动画 */
+:deep(.ant-menu-light.ant-menu-horizontal > .ant-menu-item),
+:deep(.ant-menu-light.ant-menu-horizontal > .ant-menu-submenu) {
+  animation: menuItemSlideIn 0.6s ease-out;
+  animation-fill-mode: both;
+  position: relative;
+  overflow: hidden;
+}
+
+/* 菜单项悬停时的阴影效果 */
+:deep(.ant-menu-light.ant-menu-horizontal > .ant-menu-item:hover),
+:deep(.ant-menu-light.ant-menu-horizontal > .ant-menu-submenu:hover) {
+  filter: drop-shadow(0 2px 4px rgba(24, 144, 255, 0.1));
+  box-shadow: 
+    0 2px 8px rgba(24, 144, 255, 0.1),
+    0 0 10px rgba(24, 144, 255, 0.05);
+}
+
+:deep(.ant-menu-light.ant-menu-horizontal > .ant-menu-item:nth-child(1)) { animation-delay: 0.1s; }
+:deep(.ant-menu-light.ant-menu-horizontal > .ant-menu-item:nth-child(2)) { animation-delay: 0.2s; }
+:deep(.ant-menu-light.ant-menu-horizontal > .ant-menu-item:nth-child(3)) { animation-delay: 0.3s; }
+:deep(.ant-menu-light.ant-menu-horizontal > .ant-menu-item:nth-child(4)) { animation-delay: 0.4s; }
+
+@keyframes menuItemSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 600px) {
+  .menu-icon {
+    font-size: 14px;
+    margin-right: 4px;
   }
 }
 </style>

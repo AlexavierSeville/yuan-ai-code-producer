@@ -7,6 +7,7 @@ import cn.hutool.core.util.RandomUtil;
 import cn.hutool.core.util.StrUtil;
 import com.mybatisflex.core.query.QueryWrapper;
 import com.mybatisflex.spring.service.impl.ServiceImpl;
+import com.yuan.yuanaicodeproducer.ai.AiCodeGenTypeRoutingService;
 import com.yuan.yuanaicodeproducer.constant.AppConstant;
 import com.yuan.yuanaicodeproducer.core.AiCodeGeneratorFacade;
 import com.yuan.yuanaicodeproducer.core.builder.VueProjectBuilder;
@@ -14,6 +15,7 @@ import com.yuan.yuanaicodeproducer.core.handler.StreamHandlerExecutor;
 import com.yuan.yuanaicodeproducer.exception.BusinessException;
 import com.yuan.yuanaicodeproducer.exception.ErrorCode;
 import com.yuan.yuanaicodeproducer.exception.ThrowUtils;
+import com.yuan.yuanaicodeproducer.model.dto.app.AppAddRequest;
 import com.yuan.yuanaicodeproducer.model.dto.app.AppQueryRequest;
 import com.yuan.yuanaicodeproducer.model.entity.App;
 import com.yuan.yuanaicodeproducer.mapper.AppMapper;
@@ -57,6 +59,7 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App>  implements AppS
     private final StreamHandlerExecutor streamHandlerExecutor;
     private final VueProjectBuilder vueProjectBuilder;
     private final ScreenshotService screenshotService;
+    private final AiCodeGenTypeRoutingService aiCodeGenTypeRoutingService;
 
     @Override
     public Flux<String> chatToGenCode(Long appId, String userMessage, User loginUser) {
@@ -88,6 +91,27 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App>  implements AppS
                 loginUser,
                 codeGenTypeEnum
         );
+    }
+
+    @Override
+    public Long createApp(AppAddRequest appAddRequest, User loginUser) {
+        // 参数校验
+        String initPrompt = appAddRequest.getInitPrompt();
+        ThrowUtils.throwIf(StrUtil.isBlank(initPrompt), ErrorCode.PARAMS_ERROR, "初始化 prompt 不能为空");
+        // 构造入库对象
+        App app = new App();
+        BeanUtil.copyProperties(appAddRequest, app);
+        app.setUserId(loginUser.getId());
+        // 应用名称暂时为 initPrompt 前 12 位
+        app.setAppName(initPrompt.substring(0, Math.min(initPrompt.length(), 12)));
+        // 使用 AI 智能选择代码生成类型
+        CodeGenTypeEnum selectedCodeGenType = aiCodeGenTypeRoutingService.routeCodeGenType(initPrompt);
+        app.setCodeGenType(selectedCodeGenType.getValue());
+        // 插入数据库
+        boolean result = this.save(app);
+        ThrowUtils.throwIf(!result, ErrorCode.OPERATION_ERROR);
+        log.info("应用创建成功，ID: {}, 类型: {}", app.getId(), selectedCodeGenType.getValue());
+        return app.getId();
     }
 
     @Override
