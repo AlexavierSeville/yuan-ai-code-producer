@@ -1,0 +1,527 @@
+/* 动画配置文件 */
+
+/* 基础动画变量 */
+:root {
+  --animation-duration-fast: 0.2s;
+  --animation-duration-normal: 0.3s;
+  --animation-duration-slow: 0.5s;
+  --animation-duration-slower: 0.8s;
+  
+  --animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  --animation-timing-function-bounce: cubic-bezier(0.68, -0.55, 0.265, 1.55);
+  --animation-timing-function-elastic: cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+/* 淡入动画 */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.fade-in {
+  animation: fadeIn var(--animation-duration-normal) var(--animation-timing-function);
+}
+
+/* 淡入向上动画 */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.fade-in-up {
+  animation: fadeInUp var(--animation-duration-slower) var(--animation-timing-function);
+}
+
+/* 淡入向下动画 */
+@keyframes fadeInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.fade-in-down {
+  animation: fadeInDown var(--animation-duration-slower) var(--animation-timing-function);
+}
+
+/* 淡入向左动画 */
+@keyframes fadeInLeft {
+  from {
+    opacity: 0;
+    transform: translateX(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.fade-in-left {
+  animation: fadeInLeft var(--animation-duration-slower) var(--animation-timing-function);
+}
+
+/* 淡入向右动画 */
+@keyframes fadeInRight {
+  from {
+    opacity: 0;
+    transform: translateX(-30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.fade-in-right {
+  animation: fadeInRight var(--animation-duration-slower) var(--animation-timing-function);
+}
+
+/* 缩放动画 */
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.scale-in {
+  animation: scaleIn var(--animation-duration-normal) var(--animation-timing-function);
+}
+
+/* 弹跳动画 */
+@keyframes bounceIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.3);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.05);
+  }
+  70% {
+    transform: scale(0.9);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.bounce-in {
+  animation: bounceIn var(--animation-duration-slow) var(--animation-timing-function-bounce);
+}
+
+/* 滑入动画 */
+@keyframes slideInUp {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+.slide-in-up {
+  animation: slideInUp var(--animation-duration-slow) var(--animation-timing-function);
+}
+
+/* 滑入向下动画 */
+@keyframes slideInDown {
+  from {
+    transform: translateY(-100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+.slide-in-down {
+  animation: slideInDown var(--animation-duration-slow) var(--animation-timing-function);
+}
+
+/* 滑入向左动画 */
+@keyframes slideInLeft {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+.slide-in-left {
+  animation: slideInLeft var(--animation-duration-slow) var(--animation-timing-function);
+}
+
+/* 滑入向右动画 */
+@keyframes slideInRight {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+.slide-in-right {
+  animation: slideInRight var(--animation-duration-slow) var(--animation-timing-function);
+}
+
+/* 旋转动画 */
+@keyframes rotateIn {
+  from {
+    opacity: 0;
+    transform: rotate(-200deg);
+  }
+  to {
+    opacity: 1;
+    transform: rotate(0);
+  }
+}
+
+.rotate-in {
+  animation: rotateIn var(--animation-duration-slow) var(--animation-timing-function);
+}
+
+/* 翻转动画 */
+@keyframes flipInX {
+  0% {
+    transform: perspective(400px) rotateX(90deg);
+    opacity: 0;
+  }
+  40% {
+    transform: perspective(400px) rotateX(-20deg);
+  }
+  60% {
+    transform: perspective(400px) rotateX(10deg);
+  }
+  80% {
+    transform: perspective(400px) rotateX(-5deg);
+  }
+  100% {
+    transform: perspective(400px) rotateX(0deg);
+    opacity: 1;
+  }
+}
+
+.flip-in-x {
+  animation: flipInX var(--animation-duration-slow) var(--animation-timing-function);
+}
+
+/* 光晕动画 */
+@keyframes glow {
+  0%, 100% {
+    box-shadow: 0 0 5px rgba(24, 144, 255, 0.5);
+  }
+  50% {
+    box-shadow: 0 0 20px rgba(24, 144, 255, 0.8), 0 0 30px rgba(24, 144, 255, 0.6);
+  }
+}
+
+.glow {
+  animation: glow 2s ease-in-out infinite;
+}
+
+/* 呼吸动画 */
+@keyframes breath {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+}
+
+.breath {
+  animation: breath 3s ease-in-out infinite;
+}
+
+/* 脉冲动画 */
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.pulse {
+  animation: pulse 2s ease-in-out infinite;
+}
+
+/* 摇摆动画 */
+@keyframes swing {
+  20% {
+    transform: rotate(15deg);
+  }
+  40% {
+    transform: rotate(-10deg);
+  }
+  60% {
+    transform: rotate(5deg);
+  }
+  80% {
+    transform: rotate(-5deg);
+  }
+  100% {
+    transform: rotate(0deg);
+  }
+}
+
+.swing {
+  animation: swing 1s ease-in-out;
+}
+
+/* 抖动动画 */
+@keyframes shake {
+  0%, 100% {
+    transform: translateX(0);
+  }
+  10%, 30%, 50%, 70%, 90% {
+    transform: translateX(-10px);
+  }
+  20%, 40%, 60%, 80% {
+    transform: translateX(10px);
+  }
+}
+
+.shake {
+  animation: shake 0.8s ease-in-out;
+}
+
+/* 波浪动画 */
+@keyframes wave {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  25% {
+    transform: translateY(-10px);
+  }
+  75% {
+    transform: translateY(10px);
+  }
+}
+
+.wave {
+  animation: wave 2s ease-in-out infinite;
+}
+
+/* 浮动动画 */
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-20px);
+  }
+}
+
+.float {
+  animation: float 6s ease-in-out infinite;
+}
+
+/* 背景浮动动画 */
+@keyframes backgroundFloat {
+  0%, 100% {
+    transform: translateY(0px) rotate(0deg);
+  }
+  33% {
+    transform: translateY(-20px) rotate(1deg);
+  }
+  66% {
+    transform: translateY(10px) rotate(-1deg);
+  }
+}
+
+.background-float {
+  animation: backgroundFloat 20s ease-in-out infinite;
+}
+
+/* 光扫过动画 */
+@keyframes lightSweep {
+  0% {
+    left: -100%;
+  }
+  100% {
+    left: 100%;
+  }
+}
+
+.light-sweep {
+  position: relative;
+  overflow: hidden;
+}
+
+.light-sweep::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.3),
+    transparent
+  );
+  transition: left 0.8s ease;
+}
+
+.light-sweep:hover::before {
+  left: 100%;
+}
+
+/* 悬停效果类 */
+.hover-lift {
+  transition: transform var(--animation-duration-normal) var(--animation-timing-function);
+}
+
+.hover-lift:hover {
+  transform: translateY(-4px);
+}
+
+.hover-scale {
+  transition: transform var(--animation-duration-normal) var(--animation-timing-function);
+}
+
+.hover-scale:hover {
+  transform: scale(1.05);
+}
+
+.hover-rotate {
+  transition: transform var(--animation-duration-normal) var(--animation-timing-function);
+}
+
+.hover-rotate:hover {
+  transform: rotate(5deg);
+}
+
+/* 延迟动画类 */
+.delay-100 {
+  animation-delay: 0.1s;
+}
+
+.delay-200 {
+  animation-delay: 0.2s;
+}
+
+.delay-300 {
+  animation-delay: 0.3s;
+}
+
+.delay-400 {
+  animation-delay: 0.4s;
+}
+
+.delay-500 {
+  animation-delay: 0.5s;
+}
+
+/* 动画持续时间类 */
+.duration-fast {
+  animation-duration: var(--animation-duration-fast);
+}
+
+.duration-normal {
+  animation-duration: var(--animation-duration-normal);
+}
+
+.duration-slow {
+  animation-duration: var(--animation-duration-slow);
+}
+
+.duration-slower {
+  animation-duration: var(--animation-duration-slower);
+}
+
+/* 动画填充模式 */
+.animate-fill-both {
+  animation-fill-mode: both;
+}
+
+.animate-fill-forwards {
+  animation-fill-mode: forwards;
+}
+
+.animate-fill-backwards {
+  animation-fill-mode: backwards;
+}
+
+/* 动画迭代次数 */
+.animate-infinite {
+  animation-iteration-count: infinite;
+}
+
+.animate-once {
+  animation-iteration-count: 1;
+}
+
+.animate-twice {
+  animation-iteration-count: 2;
+}
+
+/* 动画方向 */
+.animate-reverse {
+  animation-direction: reverse;
+}
+
+.animate-alternate {
+  animation-direction: alternate;
+}
+
+.animate-alternate-reverse {
+  animation-direction: alternate-reverse;
+}
+
+/* 动画暂停 */
+.animate-pause {
+  animation-play-state: paused;
+}
+
+.animate-running {
+  animation-play-state: running;
+}
+
+/* 响应式动画 */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* 打印时禁用动画 */
+@media print {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}
