@@ -184,6 +184,12 @@
               </template>
               {{ isEditMode ? '退出编辑' : '编辑模式' }}
             </a-button>
+            <a-button v-if="previewUrl" type="link" @click="refreshPreview">
+              <template #icon>
+                <ReloadOutlined />
+              </template>
+              刷新预览
+            </a-button>
             <a-button v-if="previewUrl" type="link" @click="openInNewTab">
               <template #icon>
                 <ExportOutlined />
@@ -201,8 +207,16 @@
             <a-spin size="large" />
             <p>正在生成网站...</p>
           </div>
+          <div v-else-if="previewUrl && !previewReady" class="preview-loading">
+            <a-spin size="large" />
+            <p>正在加载预览...</p>
+            <div v-if="previewCheckCount > 0" class="preview-check-info">
+              <small>检查中... ({{ previewCheckCount }}/{{ maxPreviewChecks }})</small>
+            </div>
+          </div>
           <iframe
             v-else
+            :key="previewRefreshKey"
             :src="previewUrl"
             class="preview-iframe"
             frameborder="0"
@@ -231,7 +245,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, nextTick, onUnmounted, computed } from 'vue'
+import { ref, onMounted, nextTick, onUnmounted, computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { message } from 'ant-design-vue'
 import { useLoginUserStore } from '@/stores/loginUser'
@@ -258,6 +272,7 @@ import {
   InfoCircleOutlined,
   DownloadOutlined,
   EditOutlined,
+  ReloadOutlined,
 } from '@ant-design/icons-vue'
 
 const route = useRoute()
@@ -290,6 +305,12 @@ const historyLoaded = ref(false)
 // 预览相关
 const previewUrl = ref('')
 const previewReady = ref(false)
+const previewRefreshKey = ref(0) // 用于强制刷新iframe
+const previewCheckInterval = ref<number | null>(null) // 预览检查定时器
+const previewCheckCount = ref(0) // 预览检查次数
+const maxPreviewChecks = 60 // 最大检查次数（60秒）
+const lastPreviewHash = ref<string>('') // 记录上次预览内容的哈希值
+const previewContentCache = ref<Map<string, string>>(new Map()) // 预览内容缓存
 
 // 部署相关
 const deploying = ref(false)
@@ -361,6 +382,14 @@ const loadChatHistory = async (isLoadMore = false) => {
         lastCreateTime.value = chatHistories[chatHistories.length - 1]?.createTime
         // 检查是否还有更多历史
         hasMoreHistory.value = chatHistories.length === 10
+        
+        // 如果不是加载更多，则滚动到底部
+        if (!isLoadMore) {
+          await nextTick()
+          setTimeout(() => {
+            scrollToBottom()
+          }, 100)
+        }
       } else {
         hasMoreHistory.value = false
       }
@@ -397,6 +426,10 @@ const fetchAppInfo = async () => {
 
       // 先加载对话历史
       await loadChatHistory()
+      
+      // 等待DOM更新完成
+      await nextTick()
+      
       // 如果有至少2条对话记录，展示对应的网站
       if (messages.value.length >= 2) {
         updatePreview()
@@ -550,11 +583,15 @@ const generateCode = async (userMessage: string, aiMessageIndex: number) => {
       isGenerating.value = false
       eventSource?.close()
 
-      // 延迟更新预览，确保后端已完成处理
+      // 立即开始检查预览，然后延迟更新应用信息
+      updatePreview()
+      
+      // 延迟更新应用信息，确保后端已完成处理
       setTimeout(async () => {
         await fetchAppInfo()
+        // 再次检查预览，确保获取到最新的信息
         updatePreview()
-      }, 1000)
+      }, 2000) // 减少延迟时间，提高响应速度
     })
 
     // 处理错误
@@ -566,10 +603,13 @@ const generateCode = async (userMessage: string, aiMessageIndex: number) => {
         isGenerating.value = false
         eventSource?.close()
 
+        // 立即开始检查预览
+        updatePreview()
+        
         setTimeout(async () => {
           await fetchAppInfo()
           updatePreview()
-        }, 1000)
+        }, 2000) // 减少延迟时间，提高响应速度
       } else {
         handleError(new Error('SSE连接错误'), aiMessageIndex)
       }
@@ -594,15 +634,360 @@ const updatePreview = () => {
   if (appId.value) {
     const codeGenType = appInfo.value?.codeGenType || CodeGenTypeEnum.HTML
     const newPreviewUrl = getStaticPreviewUrl(codeGenType, appId.value)
-    previewUrl.value = newPreviewUrl
-    previewReady.value = true
+    
+    // 检查URL是否发生变化
+    if (previewUrl.value !== newPreviewUrl) {
+      previewUrl.value = newPreviewUrl
+      // 重置预览状态
+      previewReady.value = false
+      lastPreviewHash.value = ''
+      
+      // 强制刷新iframe
+      previewRefreshKey.value++
+      
+      console.log('开始检查新的预览URL:', newPreviewUrl)
+      // 开始检查预览是否可用
+      startPreviewCheck()
+    } else {
+      // URL没有变化，但需要检查内容是否更新
+      console.log('URL未变化，检查内容更新...')
+      previewReady.value = false
+      startPreviewCheck()
+    }
   }
+}
+
+// 开始预览检查
+const startPreviewCheck = () => {
+  // 清除之前的定时器
+  if (previewCheckInterval.value) {
+    clearInterval(previewCheckInterval.value)
+  }
+  
+  previewCheckCount.value = 0
+  console.log('开始预览检查...')
+  
+  // 每500毫秒检查一次预览是否可用，提高响应速度
+  previewCheckInterval.value = setInterval(async () => {
+    previewCheckCount.value++
+    console.log(`预览检查第${previewCheckCount.value}次...`)
+    
+    try {
+      // 检查预览文件是否存在和内容是否变化
+      const isPreviewAvailable = await checkPreviewAvailabilitySmart()
+      
+      if (isPreviewAvailable) {
+        // 预览可用，停止检查
+        stopPreviewCheck()
+        console.log('预览文件已就绪')
+        message.success('预览已就绪！')
+        // 设置预览就绪状态
+        previewReady.value = true
+        return
+      }
+      
+      // 超过最大检查次数，停止检查
+      if (previewCheckCount.value >= maxPreviewChecks) {
+        stopPreviewCheck()
+        console.log('预览检查超时')
+        message.warning('预览检查超时，请手动刷新')
+        return
+      }
+    } catch (error) {
+      console.error('预览检查失败:', error)
+    }
+  }, 500) // 减少检查间隔，提高响应速度
+}
+
+// 停止预览检查
+const stopPreviewCheck = () => {
+  if (previewCheckInterval.value) {
+    clearInterval(previewCheckInterval.value)
+    previewCheckInterval.value = null
+    console.log('预览检查已停止')
+  }
+}
+
+// 检查预览是否可用
+const checkPreviewAvailability = async (): Promise<boolean> => {
+  if (!previewUrl.value) return false
+  
+  try {
+    // 尝试通过fetch检查文件是否存在
+    const response = await fetch(previewUrl.value, {
+      method: 'HEAD',
+      mode: 'no-cors', // 避免CORS问题
+    })
+    
+    // 如果能获取到响应，说明文件存在
+    return true
+  } catch (error) {
+    // 如果fetch失败，尝试通过iframe加载检查
+    try {
+      return await checkIframeAvailability()
+    } catch (iframeError) {
+      console.error('iframe检查失败:', iframeError)
+      return false
+    }
+  }
+}
+
+// 改进的预览检查逻辑 - 检查文件是否存在和内容是否变化
+const checkPreviewAvailabilityImproved = async (): Promise<boolean> => {
+  if (!previewUrl.value) return false
+  
+  try {
+    // 尝试通过fetch获取文件内容
+    const response = await fetch(previewUrl.value, {
+      method: 'GET',
+      mode: 'no-cors', // 避免CORS问题
+    })
+    
+    if (response.ok) {
+      // 获取文件内容
+      const content = await response.text()
+      
+      // 计算内容的哈希值（简单的字符串哈希）
+      const contentHash = simpleHash(content)
+      
+      // 检查内容是否发生变化
+      if (contentHash !== lastPreviewHash.value) {
+        console.log('检测到预览内容变化，哈希值:', contentHash)
+        lastPreviewHash.value = contentHash
+        return true
+      }
+      
+      // 内容没有变化，继续等待
+      return false
+    }
+    
+    return false
+  } catch (error) {
+    // 如果fetch失败，尝试通过iframe加载检查
+    try {
+      return await checkIframeAvailability()
+    } catch (iframeError) {
+      console.error('iframe检查失败:', iframeError)
+      return false
+    }
+  }
+}
+
+// 增强的预览检查 - 通过多种方式检测变化
+const checkPreviewAvailabilityEnhanced = async (): Promise<boolean> => {
+  if (!previewUrl.value) return false
+  
+  try {
+    // 方法1: 通过fetch获取文件内容并检查哈希
+    const response = await fetch(previewUrl.value, {
+      method: 'GET',
+      mode: 'no-cors',
+    })
+    
+    if (response.ok) {
+      const content = await response.text()
+      const contentHash = simpleHash(content)
+      
+      // 检查内容是否发生变化
+      if (contentHash !== lastPreviewHash.value) {
+        console.log('检测到预览内容变化，哈希值:', contentHash)
+        lastPreviewHash.value = contentHash
+        return true
+      }
+    }
+    
+    // 方法2: 检查文件大小变化（如果支持）
+    try {
+      const headResponse = await fetch(previewUrl.value, {
+        method: 'HEAD',
+        mode: 'no-cors',
+      })
+      
+      if (headResponse.ok) {
+        const contentLength = headResponse.headers.get('content-length')
+        if (contentLength) {
+          const currentSize = parseInt(contentLength)
+          const cachedSize = previewContentCache.value.get('size')
+          
+          if (cachedSize && currentSize !== parseInt(cachedSize)) {
+            console.log('检测到文件大小变化:', cachedSize, '->', currentSize)
+            previewContentCache.value.set('size', currentSize.toString())
+            return true
+          }
+          
+          if (!cachedSize) {
+            previewContentCache.value.set('size', currentSize.toString())
+          }
+        }
+      }
+    } catch (sizeError) {
+      // 忽略大小检查错误
+    }
+    
+    // 方法3: 检查Last-Modified头（如果支持）
+    try {
+      const lastModified = response.headers.get('last-modified')
+      if (lastModified) {
+        const currentModified = new Date(lastModified).getTime()
+        const cachedModified = previewContentCache.value.get('lastModified')
+        
+        if (cachedModified && currentModified !== parseInt(cachedModified)) {
+          console.log('检测到文件修改时间变化:', cachedModified, '->', currentModified)
+          previewContentCache.value.set('lastModified', currentModified.toString())
+          return true
+        }
+        
+        if (!cachedModified) {
+          previewContentCache.value.set('lastModified', currentModified.toString())
+        }
+      }
+    } catch (modifiedError) {
+      // 忽略修改时间检查错误
+    }
+    
+    // 内容没有变化，继续等待
+    return false
+  } catch (error) {
+    // 如果fetch失败，尝试通过iframe加载检查
+    try {
+      return await checkIframeAvailability()
+    } catch (iframeError) {
+      console.error('iframe检查失败:', iframeError)
+      return false
+    }
+  }
+}
+
+// 智能预览检查 - 结合多种检测方式
+const checkPreviewAvailabilitySmart = async (): Promise<boolean> => {
+  if (!previewUrl.value) return false
+  
+  try {
+    // 首先尝试通过HEAD请求检查文件状态
+    const headResponse = await fetch(previewUrl.value, {
+      method: 'HEAD',
+      mode: 'no-cors',
+    })
+    
+    if (headResponse.ok) {
+      // 检查ETag（如果支持）
+      const etag = headResponse.headers.get('etag')
+      if (etag) {
+        const cachedEtag = previewContentCache.value.get('etag')
+        if (cachedEtag && cachedEtag !== etag) {
+          console.log('检测到ETag变化:', cachedEtag, '->', etag)
+          previewContentCache.value.set('etag', etag)
+          return true
+        }
+        if (!cachedEtag) {
+          previewContentCache.value.set('etag', etag)
+        }
+      }
+      
+      // 检查Last-Modified（如果支持）
+      const lastModified = headResponse.headers.get('last-modified')
+      if (lastModified) {
+        const currentModified = new Date(lastModified).getTime()
+        const cachedModified = previewContentCache.value.get('lastModified')
+        
+        if (cachedModified && currentModified !== parseInt(cachedModified)) {
+          console.log('检测到文件修改时间变化:', cachedModified, '->', currentModified)
+          previewContentCache.value.set('lastModified', currentModified.toString())
+          return true
+        }
+        
+        if (!cachedModified) {
+          previewContentCache.value.set('lastModified', currentModified.toString())
+        }
+      }
+    }
+    
+    // 然后通过GET请求检查内容变化
+    const response = await fetch(previewUrl.value, {
+      method: 'GET',
+      mode: 'no-cors',
+    })
+    
+    if (response.ok) {
+      const content = await response.text()
+      const contentHash = simpleHash(content)
+      
+      // 检查内容是否发生变化
+      if (contentHash !== lastPreviewHash.value) {
+        console.log('检测到预览内容变化，哈希值:', contentHash)
+        lastPreviewHash.value = contentHash
+        return true
+      }
+    }
+    
+    // 内容没有变化，继续等待
+    return false
+  } catch (error) {
+    // 如果fetch失败，尝试通过iframe加载检查
+    try {
+      return await checkIframeAvailability()
+    } catch (iframeError) {
+      console.error('iframe检查失败:', iframeError)
+      return false
+    }
+  }
+}
+
+// 简单的字符串哈希函数
+const simpleHash = (str: string): string => {
+  let hash = 0
+  if (str.length === 0) return hash.toString()
+  
+  for (let i = 0; i < str.length; i++) {
+    const char = str.charCodeAt(i)
+    hash = ((hash << 5) - hash) + char
+    hash = hash & hash // 转换为32位整数
+  }
+  
+  return hash.toString()
+}
+
+// 通过iframe检查预览是否可用
+const checkIframeAvailability = (): Promise<boolean> => {
+  return new Promise((resolve) => {
+    const testIframe = document.createElement('iframe')
+    testIframe.style.display = 'none'
+    testIframe.src = previewUrl.value
+    
+    const timeout = setTimeout(() => {
+      document.body.removeChild(testIframe)
+      resolve(false)
+    }, 3000) // 3秒超时
+    
+    testIframe.onload = () => {
+      clearTimeout(timeout)
+      document.body.removeChild(testIframe)
+      resolve(true)
+    }
+    
+    testIframe.onerror = () => {
+      clearTimeout(timeout)
+      document.body.removeChild(testIframe)
+      resolve(false)
+    }
+    
+    document.body.appendChild(testIframe)
+  })
 }
 
 // 滚动到底部
 const scrollToBottom = () => {
   if (messagesContainer.value) {
-    messagesContainer.value.scrollTop = messagesContainer.value.scrollHeight
+    // 使用nextTick确保DOM更新完成
+    nextTick(() => {
+      if (messagesContainer.value) {
+        // 平滑滚动到底部
+        messagesContainer.value.scrollTo({
+          top: messagesContainer.value.scrollHeight,
+          behavior: 'smooth'
+        })
+      }
+    })
   }
 }
 
@@ -646,6 +1031,20 @@ const deployApp = async () => {
   }
 }
 
+// 刷新预览
+const refreshPreview = () => {
+  if (previewUrl.value) {
+    // 强制刷新iframe
+    previewRefreshKey.value++
+    previewReady.value = false
+    
+    // 重新开始预览检查
+    startPreviewCheck()
+    
+    message.success('正在刷新预览...')
+  }
+}
+
 // 在新窗口打开预览
 const openInNewTab = () => {
   if (previewUrl.value) {
@@ -663,6 +1062,11 @@ const openDeployedSite = () => {
 // iframe加载完成
 const onIframeLoad = () => {
   previewReady.value = true
+  console.log('预览iframe加载完成')
+  
+  // 停止预览检查
+  stopPreviewCheck()
+  
   const iframe = document.querySelector('.preview-iframe') as HTMLIFrameElement
   if (iframe) {
     visualEditor.init(iframe)
@@ -764,8 +1168,16 @@ const getInputPlaceholder = () => {
 }
 
 // 页面加载时获取应用信息
-onMounted(() => {
-  fetchAppInfo()
+onMounted(async () => {
+  await fetchAppInfo()
+  
+  // 等待DOM更新完成后滚动到底部
+  await nextTick()
+  
+  // 延迟滚动，确保消息容器和对话历史已渲染
+  setTimeout(() => {
+    scrollToBottom()
+  }, 300)
 
   // 监听 iframe 消息
   window.addEventListener('message', (event) => {
@@ -773,9 +1185,27 @@ onMounted(() => {
   })
 })
 
+// 监听对话历史加载状态，确保滚动到底部
+watch(historyLoaded, (newValue) => {
+  if (newValue && messages.value.length > 0) {
+    // 对话历史加载完成后，延迟滚动到底部
+    nextTick(() => {
+      setTimeout(() => {
+        scrollToBottom()
+      }, 100)
+    })
+  }
+})
+
 // 清理资源
 onUnmounted(() => {
   // EventSource 会在组件卸载时自动清理
+  
+  // 清理预览检查定时器
+  if (previewCheckInterval.value) {
+    clearInterval(previewCheckInterval.value)
+    previewCheckInterval.value = null
+  }
 })
 </script>
 
@@ -1038,6 +1468,21 @@ onUnmounted(() => {
   width: 100%;
   height: 100%;
   border: none;
+}
+
+/* 预览检查信息样式 */
+.preview-check-info {
+  margin-top: 12px;
+  text-align: center;
+  color: #8c8c8c;
+}
+
+.preview-check-info small {
+  font-size: 12px;
+  background: rgba(24, 144, 255, 0.1);
+  padding: 4px 8px;
+  border-radius: 12px;
+  border: 1px solid rgba(24, 144, 255, 0.2);
 }
 
 /* 选中元素信息样式 */
