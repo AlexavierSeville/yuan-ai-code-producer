@@ -103,3 +103,4 @@
 127.0.0.1 - - [02/Sep/2025:17:45:30 +0800] "GET /YZa1EE/assets/Home-ec21bf03.js HTTP/1.1" 200 2376 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
 127.0.0.1 - - [02/Sep/2025:17:45:30 +0800] "GET /YZa1EE/assets/Home-7974cae8.css HTTP/1.1" 200 1718 "http://localhost/YZa1EE/" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
 127.0.0.1 - - [02/Sep/2025:17:45:30 +0800] "GET /vite.svg HTTP/1.1" 404 555 "http://localhost/YZa1EE/" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+127.0.0.1 - - [03/Sep/2025:08:48:42 +0800] "GET /KBhcZw/ HTTP/1.1" 200 15878 "http://localhost:5173/" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36 Edg/139.0.0.0"
