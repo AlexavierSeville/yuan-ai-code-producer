@@ -13,12 +13,12 @@ import org.springframework.context.annotation.Scope;
  * @version 1.0
  * @date 2025-08-29 10:11:57
  * @className ReasoningStreamChatModelConfig
- * @description 推理流式模型配置类
+ * @description 非推理流式对话模型配置类
  */
 @Configuration
-@ConfigurationProperties(prefix = "langchain4j.open-ai.reasoning-streaming-chat-model")
+@ConfigurationProperties(prefix = "langchain4j.open-ai.streaming-chat-model")
 @Data
-public class ReasoningStreamingChatModelConfig {
+public class StreamingChatModelConfig {
 
     private String baseUrl;
 
@@ -30,13 +30,13 @@ public class ReasoningStreamingChatModelConfig {
 
     private Double temperature;
 
-    private Boolean logRequests = false;
+    private boolean logRequests;
 
-    private Boolean logResponses = false;
+    private boolean logResponses;
 
     @Bean
-    @Scope("prototype")  // 多例模式的注解
-    public StreamingChatModel reasoningStreamingChatModelPrototype() {
+    @Scope("prototype")  // 使用原型（多例）模式
+    public StreamingChatModel streamingChatModelPrototype() {
         return OpenAiStreamingChatModel.builder()
                 .apiKey(apiKey)
                 .baseUrl(baseUrl)

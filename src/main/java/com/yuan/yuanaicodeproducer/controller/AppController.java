@@ -55,7 +55,6 @@ public class AppController {
     private final AppService appService;
     private final UserService userService;
     private final ProjectDownloadService projectDownloadService;
-    private final AiCodeGenTypeRoutingService aiCodeGenTypeRoutingService;
 
     /**
      * 应用聊天生成代码（流式 SSE）

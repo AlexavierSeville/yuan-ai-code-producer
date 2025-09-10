@@ -8,6 +8,7 @@ import cn.hutool.core.util.StrUtil;
 import com.mybatisflex.core.query.QueryWrapper;
 import com.mybatisflex.spring.service.impl.ServiceImpl;
 import com.yuan.yuanaicodeproducer.ai.AiCodeGenTypeRoutingService;
+import com.yuan.yuanaicodeproducer.ai.AiCodeGenTypeRoutingServiceFactory;
 import com.yuan.yuanaicodeproducer.constant.AppConstant;
 import com.yuan.yuanaicodeproducer.core.AiCodeGeneratorFacade;
 import com.yuan.yuanaicodeproducer.core.builder.VueProjectBuilder;
@@ -59,7 +60,7 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App>  implements AppS
     private final StreamHandlerExecutor streamHandlerExecutor;
     private final VueProjectBuilder vueProjectBuilder;
     private final ScreenshotService screenshotService;
-    private final AiCodeGenTypeRoutingService aiCodeGenTypeRoutingService;
+    private final AiCodeGenTypeRoutingServiceFactory aiCodeGenTypeRoutingServiceFactory;
 
     @Override
     public Flux<String> chatToGenCode(Long appId, String userMessage, User loginUser) {
@@ -104,7 +105,8 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App>  implements AppS
         app.setUserId(loginUser.getId());
         // 应用名称暂时为 initPrompt 前 12 位
         app.setAppName(initPrompt.substring(0, Math.min(initPrompt.length(), 12)));
-        // 使用 AI 智能选择代码生成类型
+        // 使用 AI 智能选择代码生成类型,调用ai的智能路由服务的创建工厂来获取新的路由service(多例模式)
+        AiCodeGenTypeRoutingService aiCodeGenTypeRoutingService = aiCodeGenTypeRoutingServiceFactory.createAiCodeGenTypeRoutingService();
         CodeGenTypeEnum selectedCodeGenType = aiCodeGenTypeRoutingService.routeCodeGenType(initPrompt);
         app.setCodeGenType(selectedCodeGenType.getValue());
         // 插入数据库
