@@ -13,7 +13,7 @@ import static org.junit.jupiter.api.Assertions.*;
 public class AiCodeGenTypeRoutingServiceTest {
 
     @Resource
-    private AiCodeGenTypeRoutingService aiCodeGenTypeRoutingService;
+    private AiCodeGenTypeRoutingServiceFactory aiCodeGenTypeRoutingServiceFactory;
 
     @Test
     public void testRouteCodeGenType() {

@@ -19,11 +19,14 @@ import com.yuan.yuanaicodeproducer.model.dto.app.*;
 import com.yuan.yuanaicodeproducer.model.entity.User;
 import com.yuan.yuanaicodeproducer.model.enums.CodeGenTypeEnum;
 import com.yuan.yuanaicodeproducer.model.vo.AppVO;
+import com.yuan.yuanaicodeproducer.ratelimit.annotation.RateLimit;
+import com.yuan.yuanaicodeproducer.ratelimit.enums.RateLimitType;
 import com.yuan.yuanaicodeproducer.service.ProjectDownloadService;
 import com.yuan.yuanaicodeproducer.service.UserService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.http.MediaType;
 import org.springframework.http.codec.ServerSentEvent;
 import org.springframework.web.bind.annotation.*;
@@ -87,6 +90,7 @@ public class AppController {
             summary = "应用聊天生成代码（SSE 流）",
             description = "用户登录后，基于指定的应用 ID 和用户消息实时生成代码，返回 Server-Sent Events 流以便前端逐步渲染。"
     )
+    @RateLimit(limitType = RateLimitType.USER, rate = 2, rateInterval = 60, message = "AI 对话请求过于频繁，请稍后再试")
     public Flux<ServerSentEvent<String>> chatToGenCode(
                                       @Parameter(description = "应用 ID", required = true)
                                       @RequestParam Long appId,
@@ -119,7 +123,6 @@ public class AppController {
                                 .build()
                 ));
     }
-
 
     /**
      * 创建应用
@@ -278,32 +281,53 @@ public class AppController {
     }
 
     /**
-     * 分页获取精选应用列表
+     * 分页获取精选应用列表（带缓存优化）
+     * 
+     * 缓存机制说明：
+     * 1. 使用Spring Cache + Redis实现缓存
+     * 2. 缓存键：基于AppQueryRequest对象的MD5哈希值
+     * 3. 缓存条件：只缓存前10页数据，避免深层分页缓存浪费
+     * 4. 缓存过期：5分钟自动过期，平衡性能与数据实时性
+     * 5. 缓存意义：精选应用列表查询频繁，数据相对稳定，适合缓存优化
      *
-     * @param appQueryRequest 查询请求
-     * @return 精选应用列表
+     * @param appQueryRequest 查询请求（包含分页参数、排序条件等）
+     * @return 精选应用列表（封装为AppVO）
      */
     @PostMapping("/good/list/page/vo")
     @Operation(
             summary = "分页获取精选应用列表",
-            description = "仅返回设为精选的应用列表（封装 VO）",
+            description = "仅返回设为精选的应用列表（封装 VO），支持缓存优化",
             requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(description = "查询条件，包含页码、页大小等")
     )
+    @Cacheable(
+            value = "good_app_page",  // 缓存名称，对应Redis中的缓存空间
+            key = "T(com.yuan.yuanaicodeproducer.utils.CacheKeyUtils).generateKey(#appQueryRequest)",  // 缓存键生成：将请求对象转为JSON后计算MD5哈希
+            condition = "#appQueryRequest.pageNum <= 10"  // 缓存条件：只缓存前10页，避免深层分页缓存浪费内存
+    )
     public BaseResponse<Page<AppVO>> listGoodAppVOByPage(@RequestBody AppQueryRequest appQueryRequest) {
+        // 参数校验
         ThrowUtils.throwIf(appQueryRequest == null, ErrorCode.PARAMS_ERROR);
-        // 限制每页最多 20 个
+        
+        // 限制每页最多 20 个，防止单次查询数据量过大
         long pageSize = appQueryRequest.getPageSize();
         ThrowUtils.throwIf(pageSize > 20, ErrorCode.PARAMS_ERROR, "每页最多查询 20 个应用");
         long pageNum = appQueryRequest.getPageNum();
-        // 只查询精选的应用
+        
+        // 设置精选应用查询条件：只查询优先级为99的应用（精选应用）
         appQueryRequest.setPriority(AppConstant.GOOD_APP_PRIORITY);
+        
+        // 构建MyBatis-Flex查询条件
         QueryWrapper queryWrapper = appService.getQueryWrapper(appQueryRequest);
-        // 分页查询
+        
+        // 执行分页查询数据库
         Page<App> appPage = appService.page(Page.of(pageNum, pageSize), queryWrapper);
-        // 数据封装
+        
+        // 数据封装：将App实体转换为AppVO视图对象
         Page<AppVO> appVOPage = new Page<>(pageNum, pageSize, appPage.getTotalRow());
         List<AppVO> appVOList = appService.getAppVOList(appPage.getRecords());
         appVOPage.setRecords(appVOList);
+        
+        // 返回结果（如果缓存未命中，此结果会被自动缓存到Redis中）
         return ResultUtils.success(appVOPage);
     }
 

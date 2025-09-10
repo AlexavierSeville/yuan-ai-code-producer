@@ -8,6 +8,8 @@ import com.yuan.yuanaicodeproducer.ai.model.MultiFileCodeResult;
 import com.yuan.yuanaicodeproducer.ai.model.message.AiResponseMessage;
 import com.yuan.yuanaicodeproducer.ai.model.message.ToolExecutedMessage;
 import com.yuan.yuanaicodeproducer.ai.model.message.ToolRequestMessage;
+import com.yuan.yuanaicodeproducer.constant.AppConstant;
+import com.yuan.yuanaicodeproducer.core.builder.VueProjectBuilder;
 import com.yuan.yuanaicodeproducer.core.parser.CodeParserExecutor;
 import com.yuan.yuanaicodeproducer.core.saver.CodeFileSaverExecutor;
 import com.yuan.yuanaicodeproducer.exception.BusinessException;
@@ -35,6 +37,7 @@ import java.io.File;
 @RequiredArgsConstructor
 public class AiCodeGeneratorFacade {
 
+    private final VueProjectBuilder vueProjectBuilder;
     private final AiCodeGeneratorServiceFactory aiCodeGeneratorServiceFactory;
 
     /**
@@ -96,7 +99,7 @@ public class AiCodeGeneratorFacade {
             case VUE_PROJECT -> {
                 TokenStream tokenStream = aiCodeGeneratorService.generateVueProjectCodeStream(appId, userMessage);
                 // 使用适配器模式，将 TokenStream 转换为 Flux<String>
-                yield processTokenStream(tokenStream);
+                yield processTokenStream(tokenStream, appId);
             }
             default -> {
                 String errorMessage = "不支持的生成类型：" + codeGenTypeEnum.getValue();
@@ -111,7 +114,7 @@ public class AiCodeGeneratorFacade {
      * @param tokenStream TokenStream 对象
      * @return Flux<String> 流式响应
      */
-    private Flux<String> processTokenStream(TokenStream tokenStream) {
+    private Flux<String> processTokenStream(TokenStream tokenStream, Long appId) {
         // 反应式编程写法，通过sink对象往流中写入一些数据
         return Flux.create(sink -> {
             // 监听ai响应内容
@@ -135,8 +138,12 @@ public class AiCodeGeneratorFacade {
                     })
                     // 结束
                     .onCompleteResponse((ChatResponse response) -> {
+                        // 执行 Vue 项目构建（同步执行，确保预览时项目已就绪）
+                        String projectPath = AppConstant.CODE_OUTPUT_ROOT_DIR + File.separator + "vue_project_" + appId;
+                        vueProjectBuilder.buildProject(projectPath);
                         sink.complete();
                     })
+
                     .onError((Throwable error) -> {
                         error.printStackTrace();
                         sink.error(error);
