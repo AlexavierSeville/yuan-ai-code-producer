@@ -161,18 +161,34 @@ const filteredMenuItems = computed<MenuProps['items']>(() => filterMenus(originI
   justify-content: space-between;
   gap: 12px;
   padding: 0 24px;
-  background: rgba(255, 255, 255, 0.95);
+  background: linear-gradient(135deg, 
+    rgba(30, 60, 114, 0.95) 0%, 
+    rgba(75, 0, 130, 0.95) 25%, 
+    rgba(138, 43, 226, 0.95) 50%, 
+    rgba(30, 60, 114, 0.95) 75%, 
+    rgba(75, 0, 130, 0.95) 100%
+  );
+  background-size: 400% 400%;
+  animation: gradientShift 8s ease-in-out infinite;
   backdrop-filter: blur(20px);
-  border-bottom: 1px solid rgba(102, 126, 234, 0.15);
+  border-bottom: 1px solid rgba(138, 43, 226, 0.3);
   height: 64px;
   position: relative;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 4px 20px rgba(138, 43, 226, 0.2);
 }
 
 .global-header:hover {
-  background: rgba(255, 255, 255, 0.98);
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+  background: linear-gradient(135deg, 
+    rgba(30, 60, 114, 0.98) 0%, 
+    rgba(75, 0, 130, 0.98) 25%, 
+    rgba(138, 43, 226, 0.98) 50%, 
+    rgba(30, 60, 114, 0.98) 75%, 
+    rgba(75, 0, 130, 0.98) 100%
+  );
+  background-size: 400% 400%;
+  animation: gradientShift 6s ease-in-out infinite;
+  box-shadow: 0 8px 30px rgba(138, 43, 226, 0.3);
   transform: translateY(-1px);
 }
 
@@ -226,17 +242,18 @@ const filteredMenuItems = computed<MenuProps['items']>(() => filterMenus(originI
 }
 
 .title {
-  color: #1890ff;
+  color: #ffffff;
   font-weight: 700;
   font-size: 20px;
   white-space: nowrap;
   margin: 0;
-  background: linear-gradient(135deg, #1890ff 0%, #722ed1 100%);
+  background: linear-gradient(135deg, #ffffff 0%, #e6e6fa 50%, #dda0dd 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
   transition: all 0.3s ease;
   position: relative;
+  text-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
 }
 
 .title::after {
@@ -246,8 +263,9 @@ const filteredMenuItems = computed<MenuProps['items']>(() => filterMenus(originI
   left: 0;
   width: 0;
   height: 2px;
-  background: linear-gradient(135deg, #1890ff 0%, #722ed1 100%);
+  background: linear-gradient(135deg, #ffffff 0%, #e6e6fa 50%, #dda0dd 100%);
   transition: width 0.3s ease;
+  box-shadow: 0 0 5px rgba(255, 255, 255, 0.5);
 }
 
 .header-left:hover .title::after {
@@ -281,6 +299,7 @@ const filteredMenuItems = computed<MenuProps['items']>(() => filterMenus(originI
 :deep(.ant-menu-light.ant-menu-horizontal > .ant-menu-submenu) {
   font-size: 18px; /* 从16px增加到18px */
   font-weight: 600;
+  color: #ffffff !important;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
   overflow: hidden;
@@ -299,9 +318,10 @@ const filteredMenuItems = computed<MenuProps['items']>(() => filterMenus(originI
   left: 50%;
   width: 0;
   height: 3px;
-  background: linear-gradient(135deg, #1890ff 0%, #722ed1 100%);
+  background: linear-gradient(135deg, #ffffff 0%, #e6e6fa 50%, #dda0dd 100%);
   transition: all 0.3s ease;
   transform: translateX(-50%);
+  box-shadow: 0 0 5px rgba(255, 255, 255, 0.5);
 }
 
 :deep(.ant-menu-light.ant-menu-horizontal > .ant-menu-item:hover::before),
@@ -311,15 +331,16 @@ const filteredMenuItems = computed<MenuProps['items']>(() => filterMenus(originI
 
 :deep(.ant-menu-light.ant-menu-horizontal > .ant-menu-item:hover),
 :deep(.ant-menu-light.ant-menu-horizontal > .ant-menu-submenu:hover) {
-  color: #1890ff;
+  color: #ffffff !important;
   transform: translateY(-2px);
-  text-shadow: 0 2px 8px rgba(24, 144, 255, 0.3);
+  text-shadow: 0 2px 8px rgba(255, 255, 255, 0.5);
 }
 
 :deep(.ant-menu-light.ant-menu-horizontal > .ant-menu-item-selected) {
-  color: #1890ff;
-  background: rgba(24, 144, 255, 0.05);
+  color: #ffffff !important;
+  background: rgba(255, 255, 255, 0.1);
   border-radius: 6px;
+  text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
 }
 
 :deep(.ant-menu-light.ant-menu-horizontal > .ant-menu-item-selected::before) {
@@ -442,13 +463,15 @@ const filteredMenuItems = computed<MenuProps['items']>(() => filterMenus(originI
 }
 
 .user-name {
-  color: #1f1f1f;
+  color: #ffffff;
   font-weight: 500;
   transition: color 0.3s ease;
+  text-shadow: 0 0 5px rgba(255, 255, 255, 0.3);
 }
 
 .user-info:hover .user-name {
-  color: #1890ff;
+  color: #e6e6fa;
+  text-shadow: 0 0 10px rgba(230, 230, 250, 0.8);
 }
 
 .login-section {
@@ -640,6 +663,21 @@ const filteredMenuItems = computed<MenuProps['items']>(() => filterMenus(originI
   }
   100% {
     transform: translateY(-1px) scale(1.01);
+  }
+}
+
+@keyframes gradientShift {
+  0%, 100% {
+    background-position: 0% 50%;
+  }
+  25% {
+    background-position: 100% 50%;
+  }
+  50% {
+    background-position: 50% 100%;
+  }
+  75% {
+    background-position: 50% 0%;
   }
 }
 

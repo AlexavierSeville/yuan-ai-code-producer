@@ -129,9 +129,9 @@ const viewWork = (app: API.AppVO) => {
   }
   
   // 通过 nginx 访问部署后的网页
-  // nginx 配置在 80 端口，根目录为 code_deploy
-  // 访问格式：http://localhost/{deployKey}/
-  const nginxUrl = `http://localhost/${key}/`
+  // nginx 配置在 8701 端口，根目录为 code_deploy
+  // 访问格式：http://localhost:8701/{deployKey}/
+  const nginxUrl = `http://localhost:8701/${key}/`
   window.open(nginxUrl, '_blank')
 }
 

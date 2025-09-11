@@ -4,7 +4,7 @@
 import { CodeGenTypeEnum } from '@/utils/codeGenTypes.ts'
 
 // 应用部署域名
-export const DEPLOY_DOMAIN = import.meta.env.VITE_DEPLOY_DOMAIN || 'http://localhost'
+export const DEPLOY_DOMAIN = import.meta.env.VITE_DEPLOY_DOMAIN || 'http://localhost:8701'
 
 // API 基础地址
 export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8700/yuan'
@@ -25,5 +25,10 @@ export const getStaticPreviewUrl = (codeGenType: string, appId: string) => {
     return `${baseUrl}dist/index.html`
   }
   return baseUrl
+}
+
+// 获取Vue项目构建状态检查URL
+export const getVueBuildStatusUrl = (appId: string) => {
+  return `${STATIC_BASE_URL}/${CodeGenTypeEnum.VUE_PROJECT}_${appId}/build-status.json`
 }
 

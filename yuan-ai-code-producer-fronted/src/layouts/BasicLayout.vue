@@ -64,7 +64,7 @@ const menuItems = [
   padding: 16px;
   background: rgba(255, 255, 255, 0.25);
   border-radius: 16px;
-  padding-bottom: 72px;
+  padding-bottom: 60px;
   backdrop-filter: blur(20px);
   border: 1px solid rgba(255, 255, 255, 0.2);
   box-shadow: 
@@ -149,6 +149,7 @@ const menuItems = [
   .basic-layout::before {
     animation: backgroundFloat 15s ease-in-out infinite;
   }
+
 }
 
 /* 添加进入动画 */

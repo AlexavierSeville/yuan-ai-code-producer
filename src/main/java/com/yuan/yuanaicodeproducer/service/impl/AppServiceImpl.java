@@ -31,6 +31,7 @@ import com.yuan.yuanaicodeproducer.service.ScreenshotService;
 import com.yuan.yuanaicodeproducer.service.UserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 
@@ -53,6 +54,9 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 public class AppServiceImpl extends ServiceImpl<AppMapper, App>  implements AppService{
+
+    @Value("${code.deploy-host:http://localhost}")
+    private String deployHost;
 
     private final UserService userService;
     private final AiCodeGeneratorFacade aiCodeGeneratorFacade;
