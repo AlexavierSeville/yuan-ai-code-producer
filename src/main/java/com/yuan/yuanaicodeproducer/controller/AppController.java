@@ -23,11 +23,16 @@ import com.yuan.yuanaicodeproducer.ratelimit.annotation.RateLimit;
 import com.yuan.yuanaicodeproducer.ratelimit.enums.RateLimitType;
 import com.yuan.yuanaicodeproducer.service.ProjectDownloadService;
 import com.yuan.yuanaicodeproducer.service.UserService;
+import com.yuan.yuanaicodeproducer.config.ConcurrentChatLimiter;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.http.MediaType;
+
+import java.time.Duration;
+import java.util.concurrent.TimeoutException;
 import org.springframework.http.codec.ServerSentEvent;
 import org.springframework.web.bind.annotation.*;
 import com.yuan.yuanaicodeproducer.model.entity.App;
@@ -49,6 +54,7 @@ import java.util.Map;
  * @author <a href="https://alexavieryuan.us.kg/">元仔学习</a>
  * @since 2025
  */
+@Slf4j
 @RestController
 @RequestMapping("/app")
 @RequiredArgsConstructor
@@ -58,6 +64,7 @@ public class AppController {
     private final AppService appService;
     private final UserService userService;
     private final ProjectDownloadService projectDownloadService;
+    private final ConcurrentChatLimiter concurrentChatLimiter;
 
     /**
      * 应用聊天生成代码（流式 SSE）
@@ -90,7 +97,7 @@ public class AppController {
             summary = "应用聊天生成代码（SSE 流）",
             description = "用户登录后，基于指定的应用 ID 和用户消息实时生成代码，返回 Server-Sent Events 流以便前端逐步渲染。"
     )
-    @RateLimit(limitType = RateLimitType.USER, rate = 2, rateInterval = 60, message = "AI 对话请求过于频繁，请稍后再试")
+    @RateLimit(limitType = RateLimitType.USER, rate = 3, rateInterval = 60, message = "AI 对话请求过于频繁，请稍后再试")
     public Flux<ServerSentEvent<String>> chatToGenCode(
                                       @Parameter(description = "应用 ID", required = true)
                                       @RequestParam Long appId,
@@ -100,12 +107,39 @@ public class AppController {
         // 参数校验
         ThrowUtils.throwIf(appId == null || appId <= 0, ErrorCode.PARAMS_ERROR, "应用ID无效");
         ThrowUtils.throwIf(StrUtil.isBlank(message), ErrorCode.PARAMS_ERROR, "用户消息不能为空");
+        
+        // 检查并发限制
+        if (!concurrentChatLimiter.tryAcquire()) {
+            log.warn("系统繁忙，当前活跃对话数: {}/3", concurrentChatLimiter.getActiveChats());
+            return Flux.just(ServerSentEvent.<String>builder()
+                    .event("error")
+                    .data("系统繁忙，当前有 " + concurrentChatLimiter.getActiveChats() + " 个对话正在进行，请稍后再试")
+                    .build());
+        }
+        
         // 获取当前登录用户
         User loginUser = userService.getLoginUser(request);
+        
         // 调用服务生成代码（流式）
         Flux<String> contentFlux = appService.chatToGenCode(appId, message, loginUser);
-        // 因为流式的内容返回前端时可能会出现空格丢失的问题，导致出现例如 <divclass... 之类的东西，所以在这格式化输出
+        
+        // 添加超时机制和错误处理，使用subscribeOn确保非阻塞
         return contentFlux
+                .subscribeOn(reactor.core.scheduler.Schedulers.boundedElastic())  // 使用有界弹性调度器
+                .timeout(Duration.ofMinutes(5))  // 5分钟超时
+                .onErrorResume(TimeoutException.class, e -> {
+                    log.error("代码生成超时: appId={}, message={}", appId, message);
+                    return Flux.just("代码生成超时，请重试");
+                })
+                .onErrorResume(Exception.class, e -> {
+                    log.error("代码生成失败: appId={}, message={}, error={}", appId, message, e.getMessage());
+                    return Flux.just("代码生成失败: " + e.getMessage());
+                })
+                .doFinally(signalType -> {
+                    // 确保释放并发许可
+                    concurrentChatLimiter.release();
+                    log.info("对话结束，释放并发许可，当前活跃对话数: {}/3", concurrentChatLimiter.getActiveChats());
+                })
                 .map(chunk -> {
                     // 将内容包装成JSON对象，放入"d"字段是为了尽可能短，以节省开销
                     Map<String, String> wrapper = Map.of("d", chunk);
@@ -281,6 +315,31 @@ public class AppController {
     }
 
     /**
+     * 获取当前用户的所有应用
+     *
+     * @param request 请求
+     * @return 应用列表
+     */
+    @GetMapping("/my/list")
+    @Operation(
+            summary = "获取当前用户的所有应用",
+            description = "获取当前登录用户创建的所有应用列表（不分页）"
+    )
+    public BaseResponse<List<AppVO>> getCurrentUserApps(@Parameter(hidden = true) HttpServletRequest request) {
+        User loginUser = userService.getLoginUser(request);
+        
+        // 查询当前用户的所有应用
+        QueryWrapper queryWrapper = new QueryWrapper();
+        queryWrapper.eq("userId", loginUser.getId());
+        queryWrapper.orderBy("createTime", false); // 按创建时间倒序
+        
+        List<App> appList = appService.list(queryWrapper);
+        List<AppVO> appVOList = appService.getAppVOList(appList);
+        
+        return ResultUtils.success(appVOList);
+    }
+
+    /**
      * 分页获取精选应用列表（带缓存优化）
      * 
      * 缓存机制说明：
@@ -299,11 +358,12 @@ public class AppController {
             description = "仅返回设为精选的应用列表（封装 VO），支持缓存优化",
             requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(description = "查询条件，包含页码、页大小等")
     )
-    @Cacheable(
-            value = "good_app_page",  // 缓存名称，对应Redis中的缓存空间
-            key = "T(com.yuan.yuanaicodeproducer.utils.CacheKeyUtils).generateKey(#appQueryRequest)",  // 缓存键生成：将请求对象转为JSON后计算MD5哈希
-            condition = "#appQueryRequest.pageNum <= 10"  // 缓存条件：只缓存前10页，避免深层分页缓存浪费内存
-    )
+    // 临时注释缓存，用于调试
+    // @Cacheable(
+    //         value = "good_app_page",  // 缓存名称，对应Redis中的缓存空间
+    //         key = "T(com.yuan.yuanaicodeproducer.utils.CacheKeyUtils).generateKey(#appQueryRequest)",  // 缓存键生成：将请求对象转为JSON后计算MD5哈希
+    //         condition = "#appQueryRequest.pageNum <= 10"  // 缓存条件：只缓存前10页，避免深层分页缓存浪费内存
+    // )
     public BaseResponse<Page<AppVO>> listGoodAppVOByPage(@RequestBody AppQueryRequest appQueryRequest) {
         // 参数校验
         ThrowUtils.throwIf(appQueryRequest == null, ErrorCode.PARAMS_ERROR);
@@ -313,19 +373,34 @@ public class AppController {
         ThrowUtils.throwIf(pageSize > 20, ErrorCode.PARAMS_ERROR, "每页最多查询 20 个应用");
         long pageNum = appQueryRequest.getPageNum();
         
+        // 添加调试日志
+        log.info("精选应用查询请求 - pageNum: {}, pageSize: {}, 原始priority: {}", 
+                pageNum, pageSize, appQueryRequest.getPriority());
+        
         // 设置精选应用查询条件：只查询优先级为99的应用（精选应用）
         appQueryRequest.setPriority(AppConstant.GOOD_APP_PRIORITY);
         
         // 构建MyBatis-Flex查询条件
         QueryWrapper queryWrapper = appService.getQueryWrapper(appQueryRequest);
         
+        // 添加调试日志 - 打印生成的SQL
+        log.info("生成的查询条件: {}", queryWrapper.toSQL());
+        
         // 执行分页查询数据库
         Page<App> appPage = appService.page(Page.of(pageNum, pageSize), queryWrapper);
+        
+        // 添加调试日志
+        log.info("数据库查询结果 - 总记录数: {}, 当前页记录数: {}", 
+                appPage.getTotalRow(), appPage.getRecords().size());
         
         // 数据封装：将App实体转换为AppVO视图对象
         Page<AppVO> appVOPage = new Page<>(pageNum, pageSize, appPage.getTotalRow());
         List<AppVO> appVOList = appService.getAppVOList(appPage.getRecords());
         appVOPage.setRecords(appVOList);
+        
+        // 添加调试日志
+        log.info("最终返回结果 - 总页数: {}, 当前页记录数: {}", 
+                appVOPage.getTotalPage(), appVOList.size());
         
         // 返回结果（如果缓存未命中，此结果会被自动缓存到Redis中）
         return ResultUtils.success(appVOPage);

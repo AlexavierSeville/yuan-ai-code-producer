@@ -15,13 +15,12 @@ import com.yuan.yuanaicodeproducer.model.vo.LoginUserVO;
 import com.yuan.yuanaicodeproducer.model.vo.UserVO;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 import com.yuan.yuanaicodeproducer.model.entity.User;
 import com.yuan.yuanaicodeproducer.service.UserService;
-import org.springframework.web.bind.annotation.RestController;
+import com.yuan.yuanaicodeproducer.service.VerificationCodeService;
 import java.util.List;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import io.swagger.v3.oas.annotations.Operation;
@@ -36,10 +35,31 @@ import io.swagger.v3.oas.annotations.Parameter;
 @RestController
 @RequestMapping("/user")
 @RequiredArgsConstructor
+@Slf4j
 @Tag(name = "UserController", description = "与用户注册、登录、查询、管理相关的接口")
 public class UserController {
 
     private final UserService userService;
+    private final VerificationCodeService verificationCodeService;
+
+    /**
+     * 发送验证码
+     * @param sendVerificationCodeRequest
+     * @return 发送结果
+     */
+    @PostMapping("send-verification-code")
+    @Operation(
+            summary = "发送验证码",
+            description = "向指定邮箱发送验证码",
+            requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(description = "发送验证码请求体，包含邮箱和验证码类型")
+    )
+    public BaseResponse<Boolean> sendVerificationCode(@RequestBody SendVerificationCodeRequest sendVerificationCodeRequest) {
+        ThrowUtils.throwIf(sendVerificationCodeRequest == null, ErrorCode.PARAMS_ERROR);
+        String email = sendVerificationCodeRequest.getEmail();
+        String codeType = sendVerificationCodeRequest.getCodeType();
+        boolean result = verificationCodeService.sendVerificationCode(email, codeType);
+        return ResultUtils.success(result);
+    }
 
     /**
      * 用户注册
@@ -50,14 +70,15 @@ public class UserController {
     @Operation(
             summary = "用户注册",
             description = "根据账号与密码等信息注册用户，返回用户 ID",
-            requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(description = "注册请求体，包含账号、密码、确认密码等")
+            requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(description = "注册请求体，包含账号、密码、确认密码、验证码等")
     )
     public BaseResponse<Long> userRegister(@RequestBody UserRegisterRequest userRegisterRequest) {
         ThrowUtils.throwIf(userRegisterRequest == null, ErrorCode.PARAMS_ERROR);
         String userAccount = userRegisterRequest.getUserAccount();
         String userPassword = userRegisterRequest.getUserPassword();
         String checkPassword = userRegisterRequest.getCheckPassword();
-        long result = userService.userRegister(userAccount, userPassword, checkPassword);
+        String verificationCode = userRegisterRequest.getVerificationCode();
+        long result = userService.userRegister(userAccount, userPassword, checkPassword, verificationCode);
         return ResultUtils.success(result);
     }
 
@@ -215,5 +236,63 @@ public class UserController {
         return ResultUtils.success(userVOPage);
     }
 
+    /**
+     * 获取当前用户个人信息
+     * @param request 请求
+     * @return 用户个人信息
+     */
+    @GetMapping("/profile")
+    @Operation(summary = "获取当前用户个人信息", description = "获取当前登录用户的个人信息")
+    public BaseResponse<UserProfileVO> getCurrentUserProfile(@Parameter(hidden = true) HttpServletRequest request) {
+        User loginUser = userService.getLoginUser(request);
+        UserProfileVO userProfile = userService.getUserProfile(loginUser.getId());
+        return ResultUtils.success(userProfile);
+    }
+
+    /**
+     * 更新当前用户个人信息
+     * @param userProfileUpdateRequest 更新请求
+     * @param request 请求
+     * @return 更新结果
+     */
+    @PostMapping("/profile/update")
+    @Operation(
+            summary = "更新当前用户个人信息",
+            description = "更新当前登录用户的个人信息，包括昵称、头像、简介、密码等",
+            requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(description = "个人信息更新请求体")
+    )
+    public BaseResponse<Boolean> updateCurrentUserProfile(
+            @RequestBody UserProfileUpdateRequest userProfileUpdateRequest,
+            @Parameter(hidden = true) HttpServletRequest request) {
+        ThrowUtils.throwIf(userProfileUpdateRequest == null, ErrorCode.PARAMS_ERROR);
+        User loginUser = userService.getLoginUser(request);
+        boolean result = userService.updateUserProfile(loginUser.getId(), userProfileUpdateRequest);
+        return ResultUtils.success(result);
+    }
+
+    /**
+     * 上传用户头像
+     * @param file 头像文件
+     * @param request 请求
+     * @return 头像URL
+     */
+    @PostMapping("/avatar/upload")
+    @Operation(
+            summary = "上传用户头像",
+            description = "上传用户头像到对象存储，返回头像访问URL"
+    )
+    public BaseResponse<String> uploadUserAvatar(
+            @RequestParam("file") MultipartFile file,
+            @Parameter(hidden = true) HttpServletRequest request) {
+        try {
+            ThrowUtils.throwIf(file == null || file.isEmpty(), ErrorCode.PARAMS_ERROR, "文件不能为空");
+            User loginUser = userService.getLoginUser(request);
+            String avatarUrl = userService.uploadUserAvatar(file, loginUser.getId());
+            return ResultUtils.success(avatarUrl);
+        } catch (Exception e) {
+            log.error("头像上传失败", e);
+            throw e;
+        }
+    }
 
 }

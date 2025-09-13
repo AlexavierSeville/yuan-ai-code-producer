@@ -153,7 +153,6 @@ public class ImageCollectorNode {
                         collectedImages.addAll(images); // 添加到总结果列表
                     }
                 }
-                log.info("并发图片收集完成，共收集到 {} 张图片", collectedImages.size());
                 
             } catch (Exception e) {
                 // 异常处理：如果图片收集过程中出现任何错误，记录日志但不中断工作流

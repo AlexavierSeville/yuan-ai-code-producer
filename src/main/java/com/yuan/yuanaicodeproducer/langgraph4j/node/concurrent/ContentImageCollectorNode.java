@@ -11,6 +11,7 @@ import org.bsc.langgraph4j.prebuilt.MessagesState;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
 import static org.bsc.langgraph4j.action.AsyncNodeAction.node_async;
 
@@ -33,13 +34,27 @@ public class ContentImageCollectorNode {
                 if (plan != null && plan.getContentImageTasks() != null) {
                     ImageSearchTool imageSearchTool = SpringContextUtil.getBean(ImageSearchTool.class);
                     log.info("开始并发收集内容图片，任务数: {}", plan.getContentImageTasks().size());
+                    
+                    // 创建并发任务
+                    List<CompletableFuture<List<ImageResource>>> futures = new ArrayList<>();
                     for (ImageCollectionPlan.ImageSearchTask task : plan.getContentImageTasks()) {
-                        List<ImageResource> images = imageSearchTool.searchContentImages(task.query());
+                        futures.add(CompletableFuture.supplyAsync(() -> 
+                            imageSearchTool.searchContentImages(task.query())));
+                    }
+                    
+                    // 等待所有任务完成
+                    CompletableFuture<Void> allTasks = CompletableFuture.allOf(
+                            futures.toArray(new CompletableFuture[0]));
+                    allTasks.join();
+                    
+                    // 收集结果
+                    for (CompletableFuture<List<ImageResource>> future : futures) {
+                        List<ImageResource> images = future.join();
                         if (images != null) {
                             contentImages.addAll(images);
                         }
                     }
-                    log.info("内容图片收集完成，共收集到 {} 张图片", contentImages.size());
+                    log.info("内容图片并发收集完成，共收集到 {} 张图片", contentImages.size());
                 }
             } catch (Exception e) {
                 log.error("内容图片收集失败: {}", e.getMessage(), e);

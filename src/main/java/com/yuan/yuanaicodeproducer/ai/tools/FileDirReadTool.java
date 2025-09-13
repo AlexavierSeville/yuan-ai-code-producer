@@ -32,7 +32,10 @@ public class FileDirReadTool extends BaseTool{
      */
     private static final Set<String> IGNORED_NAMES = Set.of(
             "node_modules", ".git", "dist", "build", ".DS_Store",
-            ".env", "target", ".mvn", ".idea", ".vscode", "coverage"
+            ".env", "target", ".mvn", ".idea", ".vscode", "coverage",
+            "System Volume Information", "System32", "Windows", "Program Files",
+            "Program Files (x86)", "AppData", "Local Settings", "Temp",
+            "Temporary Internet Files", "Recycle.Bin", "$Recycle.Bin"
     );
 
     /**
@@ -49,20 +52,51 @@ public class FileDirReadTool extends BaseTool{
             @ToolMemoryId Long appId
     ) {
         try {
-            Path path = Paths.get(relativeDirPath == null ? "" : relativeDirPath);
-            if (!path.isAbsolute()) {
-                String projectDirName = "vue_project_" + appId;
-                Path projectRoot = Paths.get(AppConstant.CODE_OUTPUT_ROOT_DIR, projectDirName);
-                path = projectRoot.resolve(relativeDirPath == null ? "" : relativeDirPath);
+            // 确保始终在项目目录内操作，避免访问系统目录
+            String projectDirName = "vue_project_" + appId;
+            Path projectRoot = Paths.get(AppConstant.CODE_OUTPUT_ROOT_DIR, projectDirName);
+            Path path;
+            
+            if (StrUtil.isBlank(relativeDirPath)) {
+                // 如果路径为空，直接使用项目根目录
+                path = projectRoot;
+            } else {
+                // 解析相对路径，确保在项目目录内
+                Path relativePath = Paths.get(relativeDirPath);
+                if (relativePath.isAbsolute()) {
+                    // 如果是绝对路径，检查是否在项目目录内
+                    if (!relativePath.startsWith(projectRoot)) {
+                        return "错误：路径必须在项目目录内 - " + relativeDirPath;
+                    }
+                    path = relativePath;
+                } else {
+                    // 相对路径，与项目根目录组合
+                    path = projectRoot.resolve(relativePath).normalize();
+                    // 再次检查是否在项目目录内（防止路径遍历攻击）
+                    if (!path.startsWith(projectRoot)) {
+                        return "错误：路径必须在项目目录内 - " + relativeDirPath;
+                    }
+                }
             }
+            
             File targetDir = path.toFile();
             if (!targetDir.exists() || !targetDir.isDirectory()) {
                 return "错误：目录不存在或不是目录 - " + relativeDirPath;
             }
+            
             StringBuilder structure = new StringBuilder();
             structure.append("项目目录结构:\n");
-            // 使用 Hutool 递归获取所有文件
-            List<File> allFiles = FileUtil.loopFiles(targetDir, file -> !shouldIgnore(file.getName()));
+            
+            // 使用 Hutool 递归获取所有文件，添加异常处理
+            List<File> allFiles;
+            try {
+                allFiles = FileUtil.loopFiles(targetDir, file -> !shouldIgnore(file.getName()));
+            } catch (Exception e) {
+                log.warn("读取目录时遇到权限问题，尝试只读取直接子目录: {}", e.getMessage());
+                // 如果递归读取失败，尝试只读取直接子目录
+                allFiles = FileUtil.loopFiles(targetDir, 1, file -> !shouldIgnore(file.getName()));
+            }
+            
             // 按路径深度和名称排序显示
             allFiles.stream()
                     .sorted((f1, f2) -> {
@@ -76,7 +110,7 @@ public class FileDirReadTool extends BaseTool{
                     .forEach(file -> {
                         int depth = getRelativeDepth(targetDir, file);
                         String indent = "  ".repeat(depth);
-                        structure.append(indent).append(file.getName());
+                        structure.append(indent).append(file.getName()).append("\n");
                     });
             return structure.toString();
 

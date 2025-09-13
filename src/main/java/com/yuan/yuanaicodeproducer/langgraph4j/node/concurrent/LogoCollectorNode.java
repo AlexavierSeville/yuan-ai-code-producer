@@ -11,6 +11,7 @@ import org.bsc.langgraph4j.prebuilt.MessagesState;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
 import static org.bsc.langgraph4j.action.AsyncNodeAction.node_async;
 
@@ -33,13 +34,27 @@ public class LogoCollectorNode {
                 if (plan != null && plan.getLogoTasks() != null) {
                     LogoGeneratorTool logoTool = SpringContextUtil.getBean(LogoGeneratorTool.class);
                     log.info("开始并发生成Logo，任务数: {}", plan.getLogoTasks().size());
+                    
+                    // 创建并发任务
+                    List<CompletableFuture<List<ImageResource>>> futures = new ArrayList<>();
                     for (ImageCollectionPlan.LogoTask task : plan.getLogoTasks()) {
-                        List<ImageResource> images = logoTool.generateLogos(task.description());
+                        futures.add(CompletableFuture.supplyAsync(() -> 
+                            logoTool.generateLogos(task.description())));
+                    }
+                    
+                    // 等待所有任务完成
+                    CompletableFuture<Void> allTasks = CompletableFuture.allOf(
+                            futures.toArray(new CompletableFuture[0]));
+                    allTasks.join();
+                    
+                    // 收集结果
+                    for (CompletableFuture<List<ImageResource>> future : futures) {
+                        List<ImageResource> images = future.join();
                         if (images != null) {
                             logos.addAll(images);
                         }
                     }
-                    log.info("Logo生成完成，共生成 {} 张图片", logos.size());
+                    log.info("Logo并发生成完成，共生成 {} 张图片", logos.size());
                 }
             } catch (Exception e) {
                 log.error("Logo生成失败: {}", e.getMessage(), e);

@@ -17,7 +17,7 @@ server:
   port: 8700
   servlet:
     # 设置访问前缀
-    context-path: /yuan
+    context-path: /ai
     # 前端 cookie 30 天过期
     session:
       cookie:

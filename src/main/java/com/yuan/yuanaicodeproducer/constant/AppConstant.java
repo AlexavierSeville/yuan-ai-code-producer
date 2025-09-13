@@ -59,6 +59,7 @@ public interface AppConstant {
      * 用途：
      * - 生成应用部署后的访问URL
      * - 用于前端预览和外部访问
+     * 注意：此值会被application.yml中的配置覆盖
      */
     String CODE_DEPLOY_HOST = "http://localhost:8701";
 

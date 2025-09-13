@@ -110,8 +110,10 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App>  implements AppS
         // 应用名称暂时为 initPrompt 前 12 位
         app.setAppName(initPrompt.substring(0, Math.min(initPrompt.length(), 12)));
         // 使用 AI 智能选择代码生成类型,调用ai的智能路由服务的创建工厂来获取新的路由service(多例模式)
+        log.info("开始AI路由选择，用户提示词: {}", initPrompt);
         AiCodeGenTypeRoutingService aiCodeGenTypeRoutingService = aiCodeGenTypeRoutingServiceFactory.createAiCodeGenTypeRoutingService();
         CodeGenTypeEnum selectedCodeGenType = aiCodeGenTypeRoutingService.routeCodeGenType(initPrompt);
+        log.info("AI路由选择结果: {} ({}), 用户提示词: {}", selectedCodeGenType.getText(), selectedCodeGenType.getValue(), initPrompt);
         app.setCodeGenType(selectedCodeGenType.getValue());
         // 插入数据库
         boolean result = this.save(app);
@@ -174,7 +176,8 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App>  implements AppS
         boolean updateResult = this.updateById(updateApp);
         ThrowUtils.throwIf(!updateResult, ErrorCode.OPERATION_ERROR, "更新应用部署信息失败");
         // 9. 得到可访问的 URL
-        String appDeployUrl = String.format("%s/%s/", AppConstant.CODE_DEPLOY_HOST, deployKey);
+//        String appDeployUrl = String.format("%s/%s/", AppConstant.CODE_DEPLOY_HOST, deployKey);
+        String appDeployUrl = String.format("%s/%s/", deployHost, deployKey);
         // 10. 异步生成网页截图并更新应用封面
         generateAppScreenshotAsync(appId, appDeployUrl);
         return appDeployUrl;

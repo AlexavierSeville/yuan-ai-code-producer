@@ -37,8 +37,8 @@ public class RedissonConfig {
         SingleServerConfig singleServerConfig = config.useSingleServer()
                 .setAddress(address)
                 .setDatabase(redisDatabase)
-                .setConnectionMinimumIdleSize(1)
-                .setConnectionPoolSize(10)
+                .setConnectionMinimumIdleSize(5)    // 增加最小空闲连接数
+                .setConnectionPoolSize(20)          // 增加连接池大小
                 .setIdleConnectionTimeout(30000)
                 .setConnectTimeout(5000)
                 .setTimeout(3000)

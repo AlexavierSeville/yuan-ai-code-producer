@@ -23,7 +23,7 @@ import java.util.List;
 public class QualityResult implements Serializable {
 
     @Serial
-    private static final long serialVersionUID = 1L;
+    private static final long serialVersionUID = 3791271717373120793L;
 
     /**
      * 是否通过质检

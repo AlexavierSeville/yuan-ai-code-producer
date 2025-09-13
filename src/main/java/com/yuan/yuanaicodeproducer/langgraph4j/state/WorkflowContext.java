@@ -97,7 +97,7 @@ public class WorkflowContext implements Serializable {
     private List<ImageResource> logos;
 
     @Serial
-    private static final long serialVersionUID = 1L;
+    private static final long serialVersionUID = 3791271717373120793L;
 
     // ========== 上下文操作方法 ==========
 

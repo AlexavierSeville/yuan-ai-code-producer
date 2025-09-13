@@ -35,5 +35,11 @@ public class UserRegisterRequest implements Serializable {
      */
     @Schema(description = "确认密码", requiredMode = Schema.RequiredMode.REQUIRED)
     private String checkPassword;
+
+    /**
+     * 验证码
+     */
+    @Schema(description = "验证码", requiredMode = Schema.RequiredMode.REQUIRED)
+    private String verificationCode;
 }
 

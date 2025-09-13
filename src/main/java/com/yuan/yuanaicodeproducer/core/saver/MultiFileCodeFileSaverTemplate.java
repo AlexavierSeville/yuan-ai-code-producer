@@ -5,6 +5,11 @@ import com.yuan.yuanaicodeproducer.ai.model.MultiFileCodeResult;
 import com.yuan.yuanaicodeproducer.exception.BusinessException;
 import com.yuan.yuanaicodeproducer.exception.ErrorCode;
 import com.yuan.yuanaicodeproducer.model.enums.CodeGenTypeEnum;
+import lombok.extern.slf4j.Slf4j;
+
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 /**
  * @author Yuan
@@ -13,7 +18,15 @@ import com.yuan.yuanaicodeproducer.model.enums.CodeGenTypeEnum;
  * @className MultiFileCodeFileSaverTemplate
  * @description 把之前保存多文件代码的逻辑放到这
  */
+@Slf4j
 public class MultiFileCodeFileSaverTemplate extends CodeFileSaverTemplate<MultiFileCodeResult> {
+
+    // 文件保存专用线程池
+    private static final ExecutorService fileSaveExecutor = Executors.newFixedThreadPool(3, r -> {
+        Thread t = new Thread(r, "FileSave-");
+        t.setDaemon(true);
+        return t;
+    });
 
     @Override
     protected CodeGenTypeEnum getCodeType() {
@@ -22,12 +35,35 @@ public class MultiFileCodeFileSaverTemplate extends CodeFileSaverTemplate<MultiF
 
     @Override
     protected void saveFiles(MultiFileCodeResult result, String baseDirPath) {
-        // 保存 HTML 文件
-        writeToFile(baseDirPath, "index.html", result.getHtmlCode());
-        // 保存 CSS 文件
-        writeToFile(baseDirPath, "style.css", result.getCssCode());
-        // 保存 JavaScript 文件
-        writeToFile(baseDirPath, "script.js", result.getJsCode());
+        log.info("开始并发保存多文件代码");
+        
+        // 创建并发保存任务
+        CompletableFuture<Void> htmlTask = CompletableFuture.runAsync(() -> {
+            if (StrUtil.isNotBlank(result.getHtmlCode())) {
+                writeToFile(baseDirPath, "index.html", result.getHtmlCode());
+                log.debug("HTML文件保存完成");
+            }
+        }, fileSaveExecutor);
+        
+        CompletableFuture<Void> cssTask = CompletableFuture.runAsync(() -> {
+            if (StrUtil.isNotBlank(result.getCssCode())) {
+                writeToFile(baseDirPath, "style.css", result.getCssCode());
+                log.debug("CSS文件保存完成");
+            }
+        }, fileSaveExecutor);
+        
+        CompletableFuture<Void> jsTask = CompletableFuture.runAsync(() -> {
+            if (StrUtil.isNotBlank(result.getJsCode())) {
+                writeToFile(baseDirPath, "script.js", result.getJsCode());
+                log.debug("JS文件保存完成");
+            }
+        }, fileSaveExecutor);
+        
+        // 等待所有文件保存完成
+        CompletableFuture<Void> allTasks = CompletableFuture.allOf(htmlTask, cssTask, jsTask);
+        allTasks.join();
+        
+        log.info("多文件代码并发保存完成");
     }
 
     @Override

@@ -13,10 +13,14 @@ import lombok.extern.slf4j.Slf4j;
 import org.bsc.langgraph4j.*;
 import org.bsc.langgraph4j.prebuilt.MessagesState;
 import org.bsc.langgraph4j.prebuilt.MessagesStateGraph;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.stereotype.Component;
 
+import jakarta.annotation.Resource;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
 
 import static org.bsc.langgraph4j.StateGraph.END;
 import static org.bsc.langgraph4j.StateGraph.START;
@@ -30,7 +34,12 @@ import static org.bsc.langgraph4j.action.AsyncEdgeAction.edge_async;
  * @description 并发工作流
  */
 @Slf4j
+@Component
 public class CodeGenConcurrentWorkflow {
+
+    @Resource
+    @Qualifier("imageCollectThreadPool")
+    private ExecutorService imageCollectThreadPool;
 
     /**
      * 创建并发工作流
@@ -104,12 +113,12 @@ public class CodeGenConcurrentWorkflow {
         WorkflowContext finalContext = null;
         int stepCounter = 1;
         /*
-         * ========== 配置并发执行，否则仍然是串行 ==========
+         * ========== 并发执行说明 ==========
          * 
-         * 这部分代码是并发工作流的核心配置，用于将原本串行执行的图片收集任务
-         * 改为并发执行，大大提高执行效率。
+         * 注意：当前版本的 langgraph4j (1.6.0-rc2) 不支持 RunnableConfig 配置
+         * 因此无法通过配置实现真正的并发执行。工作流中的并发节点仍然会串行执行。
          * 
-         * 并发执行原理：
+         * 并发执行原理（理论上）：
          * 1. 创建线程池：管理并发线程的生命周期
          * 2. 配置节点执行器：指定哪些节点使用并发执行
          * 3. 执行工作流：使用配置的并发设置运行工作流
@@ -119,33 +128,17 @@ public class CodeGenConcurrentWorkflow {
          *   总时间 = 各任务时间之和
          * - 并发执行：image_plan → [content_collector, illustration_collector, diagram_collector, logo_collector]
          *   总时间 ≈ 最慢任务的时间
+         * 
+         * 当前状态：由于 langgraph4j 版本限制，实际执行仍然是串行的
          */
         
-        // 创建线程池 - 这是并发执行的基础设施
-        ExecutorService pool = ExecutorBuilder.create()
-                .setCorePoolSize(10)        // 核心线程数：始终保持10个活跃线程
-                .setMaxPoolSize(20)         // 最大线程数：最多可创建20个线程
-                .setWorkQueue(new LinkedBlockingQueue<>(100))  // 工作队列：最多缓存100个待执行任务
-                .setThreadFactory(ThreadFactoryBuilder.create()
-                        .setNamePrefix("Parallel-Image-Collect")  // 线程名前缀：便于调试和监控
-                        .build())
-                .build();
+        // 使用注入的全局线程池，避免每次创建新线程池
+        log.info("使用全局图片收集线程池，当前活跃线程数: {}", 
+                ((ThreadPoolExecutor) imageCollectThreadPool).getActiveCount());
         
-        // 配置工作流的并发执行策略
-        // RunnableConfig 告诉 LangGraph4j 框架哪些节点需要使用并发执行
-        RunnableConfig runnableConfig = RunnableConfig.builder()
-                .addParallelNodeExecutor("image_plan", pool)  // 为 image_plan 节点配置线程池
-                .build();
+        log.info("执行并发工作流：图片收集节点将并行执行");
         
-        // 使用并发配置执行工作流
-        // 这里的工作流执行会使用上面配置的线程池来实现并发
-        for (NodeOutput<MessagesState<String>> step : workflow.stream(
-                Map.of(WorkflowContext.WORKFLOW_CONTEXT_KEY, initialContext),
-                runnableConfig)) {
-            // 空的循环体，只是为了触发并发执行
-            // 实际的并发逻辑在 LangGraph4j 框架内部处理
-        }
-
+        // 执行工作流（当前版本的 langgraph4j 不支持 RunnableConfig）
         for (NodeOutput<MessagesState<String>> step : workflow.stream(
                 Map.of(WorkflowContext.WORKFLOW_CONTEXT_KEY, initialContext)
         )) {

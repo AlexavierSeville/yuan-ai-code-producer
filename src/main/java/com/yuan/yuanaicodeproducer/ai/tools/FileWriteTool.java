@@ -1,6 +1,7 @@
 package com.yuan.yuanaicodeproducer.ai.tools;
 
 import cn.hutool.core.io.FileUtil;
+import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONObject;
 import com.yuan.yuanaicodeproducer.constant.AppConstant;
 import dev.langchain4j.agent.tool.P;
@@ -35,12 +36,29 @@ public class FileWriteTool extends BaseTool{
             @ToolMemoryId Long appId
     ) {
         try {
-            Path path = Paths.get(relativeFilePath);
-            if (!path.isAbsolute()) {
-                // 相对路径处理，创建基于 appId 的项目目录
-                String projectDirName = "vue_project_" + appId;
-                Path projectRoot = Paths.get(AppConstant.CODE_OUTPUT_ROOT_DIR, projectDirName);
-                path = projectRoot.resolve(relativeFilePath);
+            // 确保始终在项目目录内操作，避免访问系统文件
+            String projectDirName = "vue_project_" + appId;
+            Path projectRoot = Paths.get(AppConstant.CODE_OUTPUT_ROOT_DIR, projectDirName);
+            Path path;
+            
+            if (StrUtil.isBlank(relativeFilePath)) {
+                return "错误：文件路径不能为空";
+            }
+            
+            Path relativePath = Paths.get(relativeFilePath);
+            if (relativePath.isAbsolute()) {
+                // 如果是绝对路径，检查是否在项目目录内
+                if (!relativePath.startsWith(projectRoot)) {
+                    return "错误：文件路径必须在项目目录内 - " + relativeFilePath;
+                }
+                path = relativePath;
+            } else {
+                // 相对路径，与项目根目录组合
+                path = projectRoot.resolve(relativePath).normalize();
+                // 再次检查是否在项目目录内（防止路径遍历攻击）
+                if (!path.startsWith(projectRoot)) {
+                    return "错误：文件路径必须在项目目录内 - " + relativeFilePath;
+                }
             }
             // 创建父目录（如果不存在）
             Path parentDir = path.getParent();

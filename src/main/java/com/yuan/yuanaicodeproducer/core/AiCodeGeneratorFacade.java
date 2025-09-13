@@ -15,6 +15,7 @@ import com.yuan.yuanaicodeproducer.core.saver.CodeFileSaverExecutor;
 import com.yuan.yuanaicodeproducer.exception.BusinessException;
 import com.yuan.yuanaicodeproducer.exception.ErrorCode;
 import com.yuan.yuanaicodeproducer.model.enums.CodeGenTypeEnum;
+import org.springframework.beans.factory.annotation.Qualifier;
 import dev.langchain4j.model.chat.response.ChatResponse;
 import dev.langchain4j.service.TokenStream;
 import dev.langchain4j.service.tool.ToolExecution;
@@ -22,8 +23,11 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
+import reactor.core.scheduler.Schedulers;
 
 import java.io.File;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
 
 /**
  * @author Yuan
@@ -39,6 +43,9 @@ public class AiCodeGeneratorFacade {
 
     private final VueProjectBuilder vueProjectBuilder;
     private final AiCodeGeneratorServiceFactory aiCodeGeneratorServiceFactory;
+    
+    @Qualifier("codeGenThreadPool")
+    private final ExecutorService codeGenThreadPool;
 
     /**
      * 统一入口：根据类型生成并保存代码
@@ -164,22 +171,36 @@ public class AiCodeGeneratorFacade {
      */
     private Flux<String> processCodeStream(Flux<String> codeStream, CodeGenTypeEnum codeGenType, Long appId) {
         StringBuilder codeBuilder = new StringBuilder();
-        return codeStream.doOnNext(chunk -> {
-            // 实时收集代码片段
-            codeBuilder.append(chunk);
-        }).doOnComplete(() -> {
-            // 流式返回完成后保存代码
-            try {
-                String completeCode = codeBuilder.toString();
-                // 使用执行器解析代码
-                Object parsedResult = CodeParserExecutor.executeParser(completeCode, codeGenType);
-                // 使用执行器保存代码
-                File savedDir = CodeFileSaverExecutor.executeSaver(parsedResult, codeGenType, appId);
-                log.info("保存成功，路径为：" + savedDir.getAbsolutePath());
-            } catch (Exception e) {
-                log.error("保存失败: {}", e.getMessage());
-            }
-        });
+        return codeStream
+                .doOnNext(chunk -> {
+                    // 实时收集代码片段
+                    codeBuilder.append(chunk);
+                })
+                .doOnComplete(() -> {
+                    // 流式返回完成后保存代码
+                    log.info("开始异步处理代码解析和保存");
+                    // 使用专用线程池异步处理代码解析和保存
+                    CompletableFuture.runAsync(() -> {
+                        try {
+                            String completeCode = codeBuilder.toString();
+                            log.info("开始解析代码，类型: {}", codeGenType);
+                            
+                            // 使用执行器解析代码
+                            Object parsedResult = CodeParserExecutor.executeParser(completeCode, codeGenType);
+                            log.info("代码解析完成，开始保存");
+                            
+                            // 使用执行器保存代码
+                            File savedDir = CodeFileSaverExecutor.executeSaver(parsedResult, codeGenType, appId);
+                            log.info("代码保存成功，路径为：{}", savedDir.getAbsolutePath());
+                        } catch (Exception e) {
+                            log.error("代码处理失败: {}", e.getMessage(), e);
+                        }
+                    }, codeGenThreadPool)
+                    .exceptionally(throwable -> {
+                        log.error("异步代码处理异常", throwable);
+                        return null;
+                    });
+                });
     }
 
     /**
