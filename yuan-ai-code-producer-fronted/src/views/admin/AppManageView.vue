@@ -5,17 +5,17 @@
       <h2 class="page-title">应用管理</h2>
       <a-form layout="inline" :model="searchParams" @finish="doSearch" class="search-form">
         <a-form-item label="应用名称">
-          <a-input 
-            v-model:value="searchParams.appName" 
-            placeholder="输入应用名称" 
+          <a-input
+            v-model:value="searchParams.appName"
+            placeholder="输入应用名称"
             size="large"
             class="search-input"
           />
         </a-form-item>
         <a-form-item label="创建者">
-          <a-input 
-            v-model:value="searchParams.userId" 
-            placeholder="输入用户ID" 
+          <a-input
+            v-model:value="searchParams.userId"
+            placeholder="输入用户ID"
             size="large"
             class="search-input"
           />
@@ -57,57 +57,60 @@
         class="app-table"
         size="large"
       >
-      <template #bodyCell="{ column, record }">
-        <template v-if="column.dataIndex === 'cover'">
-          <a-image v-if="record.cover" :src="record.cover" :width="80" :height="60" />
-          <div v-else class="no-cover">无封面</div>
-        </template>
-        <template v-else-if="column.dataIndex === 'initPrompt'">
-          <a-tooltip :title="record.initPrompt">
-            <div class="prompt-text">{{ record.initPrompt }}</div>
-          </a-tooltip>
-        </template>
-        <template v-else-if="column.dataIndex === 'codeGenType'">
-          {{ formatCodeGenType(record.codeGenType) }}
-        </template>
-        <template v-else-if="column.dataIndex === 'priority'">
-          <a-tag v-if="record.priority === 99" color="gold">精选</a-tag>
-          <span v-else>{{ record.priority || 0 }}</span>
-        </template>
-        <template v-else-if="column.dataIndex === 'deployedTime'">
-          <span v-if="record.deployedTime">
-            {{ formatTime(record.deployedTime) }}
-          </span>
-          <span v-else class="text-gray">未部署</span>
-        </template>
-        <template v-else-if="column.dataIndex === 'createTime'">
-          {{ formatTime(record.createTime) }}
-        </template>
-        <template v-else-if="column.dataIndex === 'user'">
-          <UserInfo :user="record.user" size="small" />
-        </template>
-        <template v-else-if="column.key === 'action'">
-          <a-space size="middle">
-            <a-button type="primary" size="middle" @click="editApp(record)" class="action-btn edit-btn">
-              编辑
-            </a-button>
-            <a-button
-              type="default"
-              size="middle"
-              @click="toggleFeatured(record)"
-              :class="{ 'featured-btn': record.priority === 99 }"
-              class="action-btn"
-            >
-              {{ record.priority === 99 ? '取消精选' : '精选' }}
-            </a-button>
-            <a-popconfirm title="确定要删除这个应用吗？" @confirm="deleteApp(record.id)">
-              <a-button danger size="middle" class="action-btn delete-btn">
-                删除
+        <template #bodyCell="{ column, record }">
+          <template v-if="column.dataIndex === 'cover'">
+            <a-image v-if="record.cover" :src="record.cover" :width="80" :height="60" />
+            <div v-else class="no-cover">无封面</div>
+          </template>
+          <template v-else-if="column.dataIndex === 'initPrompt'">
+            <a-tooltip :title="record.initPrompt">
+              <div class="prompt-text">{{ record.initPrompt }}</div>
+            </a-tooltip>
+          </template>
+          <template v-else-if="column.dataIndex === 'codeGenType'">
+            {{ formatCodeGenType(record.codeGenType) }}
+          </template>
+          <template v-else-if="column.dataIndex === 'priority'">
+            <a-tag v-if="record.priority === 99" color="gold">精选</a-tag>
+            <span v-else>{{ record.priority || 0 }}</span>
+          </template>
+          <template v-else-if="column.dataIndex === 'deployedTime'">
+            <span v-if="record.deployedTime">
+              {{ formatTime(record.deployedTime) }}
+            </span>
+            <span v-else class="text-gray">未部署</span>
+          </template>
+          <template v-else-if="column.dataIndex === 'createTime'">
+            {{ formatTime(record.createTime) }}
+          </template>
+          <template v-else-if="column.dataIndex === 'user'">
+            <UserInfo :user="record.user" size="small" />
+          </template>
+          <template v-else-if="column.key === 'action'">
+            <a-space size="middle">
+              <a-button
+                type="primary"
+                size="middle"
+                @click="editApp(record)"
+                class="action-btn edit-btn"
+              >
+                编辑
               </a-button>
-            </a-popconfirm>
-          </a-space>
+              <a-button
+                type="default"
+                size="middle"
+                @click="toggleFeatured(record)"
+                :class="{ 'featured-btn': record.priority === 99 }"
+                class="action-btn"
+              >
+                {{ record.priority === 99 ? '取消精选' : '精选' }}
+              </a-button>
+              <a-popconfirm title="确定要删除这个应用吗？" @confirm="deleteApp(record.id)">
+                <a-button danger size="middle" class="action-btn delete-btn"> 删除 </a-button>
+              </a-popconfirm>
+            </a-space>
+          </template>
         </template>
-      </template>
       </a-table>
     </div>
   </div>
@@ -550,7 +553,7 @@ const deleteApp = async (id: number | undefined) => {
   .search-input {
     width: 160px;
   }
-  
+
   .search-select {
     width: 140px;
   }
@@ -560,19 +563,19 @@ const deleteApp = async (id: number | undefined) => {
   #appManagePage {
     padding: 16px;
   }
-  
+
   .search-section {
     padding: 20px;
   }
-  
+
   .page-title {
     font-size: 24px;
   }
-  
+
   .search-form {
     flex-direction: column;
   }
-  
+
   .search-input,
   .search-select {
     width: 100%;

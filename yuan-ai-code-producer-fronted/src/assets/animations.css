@@ -6,7 +6,7 @@
   --animation-duration-normal: 0.3s;
   --animation-duration-slow: 0.5s;
   --animation-duration-slower: 0.8s;
-  
+
   --animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
   --animation-timing-function-bounce: cubic-bezier(0.68, -0.55, 0.265, 1.55);
   --animation-timing-function-elastic: cubic-bezier(0.175, 0.885, 0.32, 1.275);
@@ -228,11 +228,14 @@
 
 /* 光晕动画 */
 @keyframes glow {
-  0%, 100% {
+  0%,
+  100% {
     box-shadow: 0 0 5px rgba(24, 144, 255, 0.5);
   }
   50% {
-    box-shadow: 0 0 20px rgba(24, 144, 255, 0.8), 0 0 30px rgba(24, 144, 255, 0.6);
+    box-shadow:
+      0 0 20px rgba(24, 144, 255, 0.8),
+      0 0 30px rgba(24, 144, 255, 0.6);
   }
 }
 
@@ -242,7 +245,8 @@
 
 /* 呼吸动画 */
 @keyframes breath {
-  0%, 100% {
+  0%,
+  100% {
     transform: scale(1);
   }
   50% {
@@ -296,13 +300,21 @@
 
 /* 抖动动画 */
 @keyframes shake {
-  0%, 100% {
+  0%,
+  100% {
     transform: translateX(0);
   }
-  10%, 30%, 50%, 70%, 90% {
+  10%,
+  30%,
+  50%,
+  70%,
+  90% {
     transform: translateX(-10px);
   }
-  20%, 40%, 60%, 80% {
+  20%,
+  40%,
+  60%,
+  80% {
     transform: translateX(10px);
   }
 }
@@ -313,7 +325,8 @@
 
 /* 波浪动画 */
 @keyframes wave {
-  0%, 100% {
+  0%,
+  100% {
     transform: translateY(0);
   }
   25% {
@@ -330,7 +343,8 @@
 
 /* 浮动动画 */
 @keyframes float {
-  0%, 100% {
+  0%,
+  100% {
     transform: translateY(0px);
   }
   50% {
@@ -344,7 +358,8 @@
 
 /* 背景浮动动画 */
 @keyframes backgroundFloat {
-  0%, 100% {
+  0%,
+  100% {
     transform: translateY(0px) rotate(0deg);
   }
   33% {
@@ -381,12 +396,7 @@
   left: -100%;
   width: 100%;
   height: 100%;
-  background: linear-gradient(
-    90deg,
-    transparent,
-    rgba(255, 255, 255, 0.3),
-    transparent
-  );
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
   transition: left 0.8s ease;
 }
 

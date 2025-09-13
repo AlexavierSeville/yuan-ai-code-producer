@@ -20,7 +20,7 @@
     <div class="header-right">
       <div v-if="loginUserStore.loginUser.id" class="user-section">
         <a-dropdown>
-          <a-space class="user-info">
+          <a-space class="user-info" @click="goToProfile">
             <a-avatar :src="loginUserStore.loginUser.userAvatar" class="user-avatar" />
             <span class="user-name">
               {{ loginUserStore.loginUser.userName ?? '竟然没有名字' }}
@@ -28,6 +28,10 @@
           </a-space>
           <template #overlay>
             <a-menu>
+              <a-menu-item @click="goToProfile">
+                <UserOutlined />
+                个人信息
+              </a-menu-item>
               <a-menu-item @click="doLogout">
                 <LogoutOutlined />
                 退出登录
@@ -47,7 +51,7 @@
 import { computed, watch, ref, h } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useLoginUserStore } from '@/stores/loginUser.ts'
-import { LogoutOutlined, HomeOutlined } from '@ant-design/icons-vue'
+import { LogoutOutlined, UserOutlined } from '@ant-design/icons-vue'
 import { userLogout } from '@/api/userController.ts'
 import { type MenuProps, message } from 'ant-design-vue'
 
@@ -87,8 +91,19 @@ const resolvedLogo = computed(
 
 function handleMenuClick(info: { key: string }) {
   if (info?.key) {
+    // Find the menu item to check if it has an onClick handler
+    const menuItem = originItems.find(item => item.key === info.key)
+    if (menuItem && menuItem.onClick) {
+      // If the menu item has an onClick handler, don't route
+      return
+    }
     router.push({ path: info.key })
   }
+}
+
+// 跳转到个人信息页面
+const goToProfile = () => {
+  router.push('/user/profile')
 }
 
 // 退出登录
@@ -131,7 +146,7 @@ const originItems = [
     label: '元仔代码站',
     title: '元仔代码站',
     onClick: () => {
-      window.open('https://alexavieryuan.us.kg/', '_blank')
+      window.open('http://localhost:8701/', '_blank')
     }
   },
 ]
@@ -159,8 +174,8 @@ const filteredMenuItems = computed<MenuProps['items']>(() => filterMenus(originI
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  padding: 0 24px;
+  gap: 8px;
+  padding: 0 16px;
   background: linear-gradient(135deg, 
     rgba(30, 60, 114, 0.95) 0%, 
     rgba(75, 0, 130, 0.95) 25%, 
@@ -195,7 +210,7 @@ const filteredMenuItems = computed<MenuProps['items']>(() => filterMenus(originI
 .header-left {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 12px;
   cursor: pointer;
   transition: all 0.3s ease;
 }
@@ -212,7 +227,7 @@ const filteredMenuItems = computed<MenuProps['items']>(() => filterMenus(originI
 }
 
 .logo {
-  width: 96px;
+  width: 110px;
   height: auto;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   filter: drop-shadow(0 2px 8px rgba(24, 144, 255, 0.2));
@@ -244,7 +259,7 @@ const filteredMenuItems = computed<MenuProps['items']>(() => filterMenus(originI
 .title {
   color: #ffffff;
   font-weight: 700;
-  font-size: 20px;
+  font-size: 24px;
   white-space: nowrap;
   margin: 0;
   background: linear-gradient(135deg, #ffffff 0%, #e6e6fa 50%, #dda0dd 100%);
@@ -286,7 +301,7 @@ const filteredMenuItems = computed<MenuProps['items']>(() => filterMenus(originI
   justify-content: center;
   align-items: center;
   width: 100%;
-  max-width: 600px; /* 限制最大宽度，避免过宽 */
+  max-width: 800px; /* 增加最大宽度，容纳更多菜单项 */
 }
 
 /* 菜单动画效果 */
@@ -297,16 +312,16 @@ const filteredMenuItems = computed<MenuProps['items']>(() => filterMenus(originI
 
 :deep(.ant-menu-light.ant-menu-horizontal > .ant-menu-item),
 :deep(.ant-menu-light.ant-menu-horizontal > .ant-menu-submenu) {
-  font-size: 18px; /* 从16px增加到18px */
+  font-size: 20px; /* 从18px增加到20px */
   font-weight: 600;
   color: #ffffff !important;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
   overflow: hidden;
-  padding: 0 24px; /* 增加左右内边距，让选项更宽 */
+  padding: 0 16px; /* 减少左右内边距，节省空间 */
   height: 64px; /* 确保高度与header一致 */
   line-height: 64px; /* 垂直居中 */
-  min-width: 120px; /* 设置最小宽度 */
+  min-width: 100px; /* 减少最小宽度 */
   text-align: center; /* 文字居中 */
 }
 
@@ -349,28 +364,28 @@ const filteredMenuItems = computed<MenuProps['items']>(() => filterMenus(originI
 
 /* 子菜单样式优化 */
 :deep(.ant-menu-submenu-title) {
-  font-size: 18px !important; /* 确保子菜单标题也是18px */
-  padding: 0 24px !important;
+  font-size: 20px !important; /* 确保子菜单标题也是20px */
+  padding: 0 16px !important;
   height: 64px !important;
   line-height: 64px !important;
-  min-width: 120px !important;
+  min-width: 100px !important;
 }
 
 /* 响应式调整 */
 @media (max-width: 1200px) {
   .global-header {
-    padding: 0 20px;
+    padding: 0 16px;
   }
   
   :deep(.ant-menu-light.ant-menu-horizontal > .ant-menu-item),
   :deep(.ant-menu-light.ant-menu-horizontal > .ant-menu-submenu) {
-    padding: 0 20px;
-    min-width: 110px;
+    padding: 0 14px;
+    min-width: 90px;
   }
   
   :deep(.ant-menu-submenu-title) {
-    padding: 0 20px !important;
-    min-width: 110px !important;
+    padding: 0 14px !important;
+    min-width: 90px !important;
   }
 }
 
@@ -380,20 +395,20 @@ const filteredMenuItems = computed<MenuProps['items']>(() => filterMenus(originI
   }
   
   .global-header {
-    padding: 0 16px;
+    padding: 0 12px;
   }
   
   :deep(.ant-menu-light.ant-menu-horizontal > .ant-menu-item),
   :deep(.ant-menu-light.ant-menu-horizontal > .ant-menu-submenu) {
-    font-size: 16px;
-    padding: 0 16px;
-    min-width: 100px;
+    font-size: 18px;
+    padding: 0 12px;
+    min-width: 80px;
   }
   
   :deep(.ant-menu-submenu-title) {
-    font-size: 16px !important;
-    padding: 0 16px !important;
-    min-width: 100px !important;
+    font-size: 18px !important;
+    padding: 0 12px !important;
+    min-width: 80px !important;
   }
   
   :deep(.ant-menu) {
@@ -405,20 +420,20 @@ const filteredMenuItems = computed<MenuProps['items']>(() => filterMenus(originI
 
 @media (max-width: 600px) {
   .global-header {
-    padding: 0 12px;
+    padding: 0 8px;
   }
   
   :deep(.ant-menu-light.ant-menu-horizontal > .ant-menu-item),
   :deep(.ant-menu-light.ant-menu-horizontal > .ant-menu-submenu) {
-    font-size: 15px;
-    padding: 0 12px;
-    min-width: 80px;
+    font-size: 16px;
+    padding: 0 8px;
+    min-width: 70px;
   }
   
   :deep(.ant-menu-submenu-title) {
-    font-size: 15px !important;
-    padding: 0 12px !important;
-    min-width: 80px !important;
+    font-size: 16px !important;
+    padding: 0 8px !important;
+    min-width: 70px !important;
   }
   
   .header-left {
@@ -426,7 +441,7 @@ const filteredMenuItems = computed<MenuProps['items']>(() => filterMenus(originI
   }
   
   .logo {
-    width: 80px; /* 移动端logo稍微小一点 */
+    width: 90px; /* 移动端logo稍微小一点 */
   }
 }
 
@@ -452,6 +467,8 @@ const filteredMenuItems = computed<MenuProps['items']>(() => filterMenus(originI
 }
 
 .user-avatar {
+  width: 36px !important;
+  height: 36px !important;
   transition: all 0.3s ease;
   border: 2px solid transparent;
 }
@@ -465,6 +482,7 @@ const filteredMenuItems = computed<MenuProps['items']>(() => filterMenus(originI
 .user-name {
   color: #ffffff;
   font-weight: 500;
+  font-size: 16px;
   transition: color 0.3s ease;
   text-shadow: 0 0 5px rgba(255, 255, 255, 0.3);
 }
@@ -544,7 +562,7 @@ const filteredMenuItems = computed<MenuProps['items']>(() => filterMenus(originI
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 18px;
+  font-size: 20px;
   margin-right: 8px;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
@@ -562,49 +580,12 @@ const filteredMenuItems = computed<MenuProps['items']>(() => filterMenus(originI
   transition: all 0.3s ease;
 }
 
-@keyframes emojiWiggle {
-  0%, 100% {
-    transform: scale(1.15) rotate(2deg);
-  }
-  50% {
-    transform: scale(1.15) rotate(-2deg);
-  }
-}
 
-/* 菜单项悬停时的图标脉冲效果 */
+/* 菜单项悬停时的图标效果 */
 :deep(.ant-menu-light.ant-menu-horizontal > .ant-menu-item:hover .emoji-icon),
 :deep(.ant-menu-light.ant-menu-horizontal > .ant-menu-submenu:hover .emoji-icon) {
   filter: drop-shadow(0 0 4px rgba(24, 144, 255, 0.2));
   text-shadow: 0 0 4px rgba(24, 144, 255, 0.3);
-}
-
-@keyframes emojiPulse {
-  0%, 100% {
-    transform: scale(1.15) rotate(3deg);
-  }
-  50% {
-    transform: scale(1.18) rotate(4deg);
-  }
-}
-
-/* 菜单项悬停时的图标弹跳效果 */
-:deep(.ant-menu-light.ant-menu-horizontal > .ant-menu-item:hover .emoji-icon),
-:deep(.ant-menu-light.ant-menu-horizontal > .ant-menu-submenu:hover .emoji-icon) {
-  animation: emojiBounce 3s ease-in-out infinite;
-}
-
-@keyframes emojiSpin {
-  from {
-    transform: scale(1.3) rotate(10deg);
-  }
-  to {
-    transform: scale(1.3) rotate(370deg);
-  }
-}
-
-/* 减少图标的旋转动画，让效果更平滑 */
-:deep(.ant-menu-light.ant-menu-horizontal > .ant-menu-item:hover .emoji-icon),
-:deep(.ant-menu-light.ant-menu-horizontal > .ant-menu-submenu:hover .emoji-icon) {
   animation: emojiBounce 2s ease-in-out infinite;
 }
 
@@ -631,22 +612,6 @@ const filteredMenuItems = computed<MenuProps['items']>(() => filterMenus(originI
   animation: emojiBounce 0.6s ease-out;
 }
 
-/* Emoji弹跳动画 */
-@keyframes emojiBounce {
-  0%, 20%, 53%, 80%, 100% {
-    transform: scale(1.1) translateY(0);
-  }
-  40%, 43% {
-    transform: scale(1.1) translateY(-8px);
-  }
-  70% {
-    transform: scale(1.1) translateY(-4px);
-  }
-  90% {
-    transform: scale(1.1) translateY(-2px);
-  }
-}
-
 /* 菜单项悬停时的整体效果增强 */
 :deep(.ant-menu-light.ant-menu-horizontal > .ant-menu-item:hover),
 :deep(.ant-menu-light.ant-menu-horizontal > .ant-menu-submenu:hover) {
@@ -657,14 +622,6 @@ const filteredMenuItems = computed<MenuProps['items']>(() => filterMenus(originI
   transition: all 0.3s ease;
 }
 
-@keyframes menuHover {
-  0% {
-    transform: translateY(0) scale(1);
-  }
-  100% {
-    transform: translateY(-1px) scale(1.01);
-  }
-}
 
 @keyframes gradientShift {
   0%, 100% {
@@ -681,31 +638,6 @@ const filteredMenuItems = computed<MenuProps['items']>(() => filterMenus(originI
   }
 }
 
-@keyframes backgroundShift {
-  0%, 100% {
-    background-position: 0% 50%;
-  }
-  50% {
-    background-position: 100% 50%;
-  }
-}
-
-/* 减少背景动画，让效果更平滑 */
-:deep(.ant-menu-light.ant-menu-horizontal > .ant-menu-item:hover),
-:deep(.ant-menu-light.ant-menu-horizontal > .ant-menu-submenu:hover) {
-  animation: none;
-}
-
-/* 菜单项悬停时的背景动画效果 */
-:deep(.ant-menu-light.ant-menu-horizontal > .ant-menu-item:hover),
-:deep(.ant-menu-light.ant-menu-horizontal > .ant-menu-submenu:hover) {
-  background: linear-gradient(135deg, 
-    rgba(24, 144, 255, 0.05), 
-    rgba(24, 144, 255, 0.1)
-  );
-  position: relative;
-  overflow: hidden;
-}
 
 /* 菜单项悬停时的光波效果 */
 :deep(.ant-menu-light.ant-menu-horizontal > .ant-menu-item:hover::after),
@@ -730,13 +662,6 @@ const filteredMenuItems = computed<MenuProps['items']>(() => filterMenus(originI
   }
 }
 
-/* 减少光波动画，让效果更平滑 */
-:deep(.ant-menu-light.ant-menu-horizontal > .ant-menu-item:hover::after),
-:deep(.ant-menu-light.ant-menu-horizontal > .ant-menu-item:hover::before),
-:deep(.ant-menu-light.ant-menu-horizontal > .ant-menu-submenu:hover::after) {
-  animation: none;
-}
-
 /* 菜单项悬停时的文字颜色变化 */
 :deep(.ant-menu-light.ant-menu-horizontal > .ant-menu-item:hover .ant-menu-title-content),
 :deep(.ant-menu-light.ant-menu-horizontal > .ant-menu-submenu:hover .ant-menu-title-content) {
@@ -746,26 +671,7 @@ const filteredMenuItems = computed<MenuProps['items']>(() => filterMenus(originI
   transform: scale(1.02);
 }
 
-@keyframes textGradient {
-  0%, 100% {
-    background-position: 0% 50%;
-  }
-  50% {
-    background-position: 100% 50%;
-  }
-}
 
-/* 减少文字渐变动画，让效果更平滑 */
-:deep(.ant-menu-light.ant-menu-horizontal > .ant-menu-item:hover .ant-menu-title-content),
-:deep(.ant-menu-light.ant-menu-horizontal > .ant-menu-submenu:hover .ant-menu-title-content) {
-  animation: none;
-}
-
-/* 菜单项悬停时的文字动画效果 */
-:deep(.ant-menu-light.ant-menu-horizontal > .ant-menu-item:hover .ant-menu-title-content),
-:deep(.ant-menu-light.ant-menu-horizontal > .ant-menu-submenu:hover .ant-menu-title-content) {
-  transform: scale(1.02);
-}
 
 /* 选中状态的菜单项效果 */
 :deep(.ant-menu-light.ant-menu-horizontal > .ant-menu-item-selected),
@@ -829,11 +735,6 @@ const filteredMenuItems = computed<MenuProps['items']>(() => filterMenus(originI
   }
 }
 
-/* 减少波纹动画，让效果更平滑 */
-:deep(.ant-menu-light.ant-menu-horizontal > .ant-menu-item:hover::before),
-:deep(.ant-menu-light.ant-menu-horizontal > .ant-menu-submenu:hover::before) {
-  animation: none;
-}
 
 /* 菜单项悬停时的光晕效果 */
 :deep(.ant-menu-light.ant-menu-horizontal > .ant-menu-item:hover::after),
@@ -880,14 +781,6 @@ const filteredMenuItems = computed<MenuProps['items']>(() => filterMenus(originI
   transform: scale(1.15) rotate(3deg);
 }
 
-@keyframes emojiColorShift {
-  0%, 100% {
-    filter: hue-rotate(0deg) saturate(1.1) brightness(1.05);
-  }
-  50% {
-    filter: hue-rotate(30deg) saturate(1.2) brightness(1.1);
-  }
-}
 
 @keyframes borderFadeIn {
   to {
@@ -919,7 +812,7 @@ const filteredMenuItems = computed<MenuProps['items']>(() => filterMenus(originI
 /* 响应式emoji图标 */
 @media (max-width: 768px) {
   .menu-icon {
-    font-size: 16px;
+    font-size: 18px;
     margin-right: 6px;
   }
 }
@@ -960,7 +853,7 @@ const filteredMenuItems = computed<MenuProps['items']>(() => filterMenus(originI
 
 @media (max-width: 600px) {
   .menu-icon {
-    font-size: 14px;
+    font-size: 16px;
     margin-right: 4px;
   }
 }

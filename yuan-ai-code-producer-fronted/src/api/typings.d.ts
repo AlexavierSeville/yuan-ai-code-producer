@@ -154,6 +154,12 @@ declare namespace API {
     message?: string
   }
 
+  type BaseResponseUserProfileVO = {
+    code?: number
+    data?: UserProfileVO
+    message?: string
+  }
+
   type ChatHistory = {
     id?: number
     message?: string
@@ -333,6 +339,15 @@ declare namespace API {
     userPassword: string
     /** 确认密码 */
     checkPassword: string
+    /** 验证码 */
+    verificationCode: string
+  }
+
+  type SendVerificationCodeRequest = {
+    /** 邮箱 */
+    email: string
+    /** 验证码类型 */
+    codeType: string
   }
 
   type UserUpdateRequest = {
@@ -341,6 +356,25 @@ declare namespace API {
     userAvatar?: string
     userProfile?: string
     userRole?: string
+  }
+
+  type UserProfileUpdateRequest = {
+    userName?: string
+    userAvatar?: string
+    userProfile?: string
+    userPassword?: string
+    checkPassword?: string
+  }
+
+  type UserProfileVO = {
+    id?: number
+    userAccount?: string
+    userName?: string
+    userAvatar?: string
+    userProfile?: string
+    userRole?: string
+    createTime?: string
+    updateTime?: string
   }
 
   type UserVO = {

@@ -4,10 +4,12 @@
 import { CodeGenTypeEnum } from '@/utils/codeGenTypes.ts'
 
 // 应用部署域名
-export const DEPLOY_DOMAIN = import.meta.env.VITE_DEPLOY_DOMAIN || 'http://localhost:8701'
+export const DEPLOY_DOMAIN = import.meta.env.VITE_DEPLOY_DOMAIN || 
+  (import.meta.env.PROD ? 'http://localhost:8701' : 'http://localhost:8701')
 
 // API 基础地址
-export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8700/yuan'
+export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 
+  (import.meta.env.PROD ? 'https://ai.alexavieryuan.us.kg/ai' : 'http://localhost:8700/ai')
 
 // 静态资源地址
 export const STATIC_BASE_URL = `${API_BASE_URL}/static`

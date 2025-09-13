@@ -9,7 +9,6 @@ loginUserStore.fetchLoginUser();
 
 <template>
   <BasicLayout />
-
 </template>
 
 <style>

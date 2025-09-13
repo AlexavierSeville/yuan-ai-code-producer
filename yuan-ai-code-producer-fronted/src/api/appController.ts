@@ -30,7 +30,7 @@ export async function deleteAppByAdmin(body: API.DeleteRequest, options?: { [key
 export async function getAppVoByIdByAdmin(
   // 叠加生成的Param类型 (非body参数swagger默认没有生成对象)
   params: API.getAppVOByIdByAdminParams,
-  options?: { [key: string]: any }
+  options?: { [key: string]: any },
 ) {
   return request<API.BaseResponseAppVO>('/app/admin/get/vo', {
     method: 'GET',
@@ -44,7 +44,7 @@ export async function getAppVoByIdByAdmin(
 /** 管理员分页获取应用列表 根据查询条件分页获取应用列表（封装 VO），仅管理员可用 POST /app/admin/list/page/vo */
 export async function listAppVoByPageByAdmin(
   body: API.AppQueryRequest,
-  options?: { [key: string]: any }
+  options?: { [key: string]: any },
 ) {
   return request<API.BaseResponsePageAppVO>('/app/admin/list/page/vo', {
     method: 'POST',
@@ -59,7 +59,7 @@ export async function listAppVoByPageByAdmin(
 /** 管理员更新应用 管理员可更新应用的相关信息 POST /app/admin/update */
 export async function updateAppByAdmin(
   body: API.AppAdminUpdateRequest,
-  options?: { [key: string]: any }
+  options?: { [key: string]: any },
 ) {
   return request<API.BaseResponseBoolean>('/app/admin/update', {
     method: 'POST',
@@ -75,7 +75,7 @@ export async function updateAppByAdmin(
 export async function chatToGenCode(
   // 叠加生成的Param类型 (非body参数swagger默认没有生成对象)
   params: API.chatToGenCodeParams,
-  options?: { [key: string]: any }
+  options?: { [key: string]: any },
 ) {
   return request<API.ServerSentEventString[]>('/app/chat/gen/code', {
     method: 'GET',
@@ -114,7 +114,7 @@ export async function deployApp(body: API.AppDeployRequest, options?: { [key: st
 export async function downloadAppCode(
   // 叠加生成的Param类型 (非body参数swagger默认没有生成对象)
   params: API.downloadAppCodeParams,
-  options?: { [key: string]: any }
+  options?: { [key: string]: any },
 ) {
   const { appId: param0, ...queryParams } = params
   return request<any>(`/app/download/${param0}`, {
@@ -128,7 +128,7 @@ export async function downloadAppCode(
 export async function getAppVoById(
   // 叠加生成的Param类型 (非body参数swagger默认没有生成对象)
   params: API.getAppVOByIdParams,
-  options?: { [key: string]: any }
+  options?: { [key: string]: any },
 ) {
   return request<API.BaseResponseAppVO>('/app/get/vo', {
     method: 'GET',
@@ -142,7 +142,7 @@ export async function getAppVoById(
 /** 分页获取精选应用列表 仅返回设为精选的应用列表（封装 VO） POST /app/good/list/page/vo */
 export async function listGoodAppVoByPage(
   body: API.AppQueryRequest,
-  options?: { [key: string]: any }
+  options?: { [key: string]: any },
 ) {
   return request<API.BaseResponsePageAppVO>('/app/good/list/page/vo', {
     method: 'POST',
@@ -165,7 +165,7 @@ export async function list(options?: { [key: string]: any }) {
 /** 分页获取当前用户的应用列表 仅返回当前登录用户创建的应用列表（封装 VO） POST /app/my/list/page/vo */
 export async function listMyAppVoByPage(
   body: API.AppQueryRequest,
-  options?: { [key: string]: any }
+  options?: { [key: string]: any },
 ) {
   return request<API.BaseResponsePageAppVO>('/app/my/list/page/vo', {
     method: 'POST',
@@ -185,6 +185,14 @@ export async function updateApp(body: API.AppUpdateRequest, options?: { [key: st
       'Content-Type': 'application/json',
     },
     data: body,
+    ...(options || {}),
+  })
+}
+
+/** 获取当前用户的所有应用 获取当前登录用户创建的所有应用 GET /app/my/list */
+export async function getCurrentUserApps(options?: { [key: string]: any }) {
+  return request<API.BaseResponseAppVO[]>('/app/my/list', {
+    method: 'GET',
     ...(options || {}),
   })
 }

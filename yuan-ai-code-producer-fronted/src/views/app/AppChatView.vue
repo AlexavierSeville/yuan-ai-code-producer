@@ -7,6 +7,7 @@
         <a-tag v-if="appInfo?.codeGenType" color="blue" class="code-gen-type-tag">
           {{ formatCodeGenType(appInfo.codeGenType) }}
         </a-tag>
+        <span class="generation-tip-text">项目越大，生成时间越久，请耐心等待哦~   尤其是是可恶的Vue项目，生成完成之后还要构建运行，会更久噢😑~~~</span>
       </div>
       <div class="header-right">
         <a-button type="default" @click="showAppDetail">
@@ -36,6 +37,24 @@
       </div>
     </div>
 
+    <!-- 失败提示区域 -->
+    <div v-if="showFailureTip" class="failure-tip-banner">
+      <div class="tip-content">
+        <div class="tip-icon">
+          <span v-if="failureType === 'generation'">⚠️</span>
+          <span v-else>⏰</span>
+        </div>
+        <div class="tip-message">
+          <span v-if="failureType === 'generation'">项目生成失败</span>
+          <span v-else>预览加载超时</span>
+          <span class="tip-text">当项目生成失败时最好的办法是让AI删掉重做哦~</span>
+        </div>
+        <div class="tip-close" @click="showFailureTip = false">
+          <span>×</span>
+        </div>
+      </div>
+    </div>
+
     <!-- 主要内容区域 -->
     <div class="main-content">
       <!-- 左侧对话区域 -->
@@ -48,12 +67,12 @@
               加载更多历史消息
             </a-button>
           </div>
-          
+
           <!-- 滚动到顶部按钮 -->
           <div v-if="showScrollToTop" class="scroll-to-top-container">
-            <a-button 
-              type="primary" 
-              shape="circle" 
+            <a-button
+              type="primary"
+              shape="circle"
               size="small"
               @click="scrollToTop"
               class="scroll-to-top-btn"
@@ -63,7 +82,7 @@
               </template>
             </a-button>
           </div>
-          
+
           <div v-for="(message, index) in messages" :key="index" class="message-item">
             <div v-if="message.type === 'user'" class="user-message">
               <div class="message-content">{{ message.content }}</div>
@@ -172,7 +191,7 @@
           <h3>生成后的网页展示</h3>
           <div class="preview-actions">
             <a-button
-              v-if="isOwner && previewState.url"
+              v-if="isOwner && previewUrl"
               type="link"
               :danger="isEditMode"
               @click="toggleEditMode"
@@ -184,13 +203,13 @@
               </template>
               {{ isEditMode ? '退出编辑' : '编辑模式' }}
             </a-button>
-            <a-button v-if="previewState.url" type="link" @click="refreshPreview">
+            <a-button v-if="previewUrl" type="link" @click="refreshPreview">
               <template #icon>
                 <ReloadOutlined />
               </template>
               刷新预览
             </a-button>
-            <a-button v-if="previewState.url" type="link" @click="openPreviewInNewWindow">
+            <a-button v-if="previewUrl" type="link" @click="openInNewTab">
               <template #icon>
                 <ExportOutlined />
               </template>
@@ -199,7 +218,7 @@
           </div>
         </div>
         <div class="preview-content">
-          <div v-if="!previewState.url && !isGenerating" class="preview-placeholder">
+          <div v-if="!previewUrl && !isGenerating" class="preview-placeholder">
             <div class="placeholder-icon">🌐</div>
             <p>网站文件生成完成后将在这里展示</p>
           </div>
@@ -207,27 +226,17 @@
             <a-spin size="large" />
             <p>正在生成网站...</p>
           </div>
-          <div v-else-if="previewState.url && !previewState.ready" class="preview-loading">
+          <div v-else-if="previewUrl && !previewReady" class="preview-loading">
             <a-spin size="large" />
             <p>正在加载预览...</p>
-            <div v-if="previewState.checkCount > 0" class="preview-check-info">
-              <small>检查中... ({{ previewState.checkCount }}/{{ maxPreviewChecks }})</small>
-            </div>
-            <div v-if="previewState.checkCount >= maxPreviewChecks" class="preview-timeout-actions">
-              <a-button type="primary" size="small" @click="refreshPreview">
-                <ReloadOutlined />
-                手动刷新
-              </a-button>
-              <a-button size="small" @click="openPreviewInNewWindow">
-                <ExportOutlined />
-                新窗口打开
-              </a-button>
+            <div v-if="previewCheckCount > 0" class="preview-check-info">
+              <small>检查中... ({{ previewCheckCount }}/{{ maxPreviewChecks }})</small>
             </div>
           </div>
           <iframe
             v-else
-            :key="previewState.refreshKey"
-            :src="previewState.url"
+            :key="previewRefreshKey"
+            :src="previewUrl"
             class="preview-iframe"
             frameborder="0"
             @load="onIframeLoad"
@@ -255,7 +264,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, nextTick, onUnmounted, computed, watch } from 'vue'
+import { ref, onMounted, nextTick, onUnmounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { message } from 'ant-design-vue'
 import { useLoginUserStore } from '@/stores/loginUser'
@@ -289,12 +298,11 @@ const route = useRoute()
 const router = useRouter()
 const loginUserStore = useLoginUserStore()
 
-// ==================== 响应式数据定义 ====================
 // 应用信息
 const appInfo = ref<API.AppVO>()
 const appId = ref<any>()
 
-// 消息接口定义
+// 对话相关
 interface Message {
   type: 'user' | 'ai'
   content: string
@@ -302,46 +310,34 @@ interface Message {
   createTime?: string
 }
 
-// 对话相关状态
 const messages = ref<Message[]>([])
 const userInput = ref('')
 const isGenerating = ref(false)
 const messagesContainer = ref<HTMLElement>()
 
-// 对话历史状态
+// 对话历史相关
 const loadingHistory = ref(false)
 const hasMoreHistory = ref(false)
 const lastCreateTime = ref<string>()
 const historyLoaded = ref(false)
 
-// 预览状态管理
-const previewState = ref<{
-  url: string
-  ready: boolean
-  refreshKey: number
-  checkInterval: number | null
-  checkCount: number
-  lastHash: string
-  contentCache: Map<string, string>
-}>({
-  url: '',
-  ready: false,
-  refreshKey: 0,
-  checkInterval: null,
-  checkCount: 0,
-  lastHash: '',
-  contentCache: new Map()
-})
+// 预览相关
+const previewUrl = ref('')
+const previewReady = ref(false)
+const previewRefreshKey = ref(0) // 用于强制刷新iframe
+const previewCheckInterval = ref<number | null>(null) // 预览检查定时器
+const previewCheckCount = ref(0) // 预览检查次数
+const maxPreviewChecks = 30 // 最大检查次数（30秒）
 
-const maxPreviewChecks = 120 // 最大检查次数（60秒，每500ms检查一次）
-
-// 部署和下载状态
+// 部署相关
 const deploying = ref(false)
 const deployModalVisible = ref(false)
 const deployUrl = ref('')
+
+// 下载相关
 const downloading = ref(false)
 
-// 可视化编辑状态
+// 可视化编辑相关
 const isEditMode = ref(false)
 const selectedElementInfo = ref<ElementInfo | null>(null)
 const visualEditor = new VisualEditor({
@@ -350,7 +346,7 @@ const visualEditor = new VisualEditor({
   },
 })
 
-// 权限计算属性
+// 权限相关
 const isOwner = computed(() => {
   return appInfo.value?.userId === loginUserStore.loginUser.id
 })
@@ -359,38 +355,30 @@ const isAdmin = computed(() => {
   return loginUserStore.loginUser.userRole === 'admin'
 })
 
-// ==================== 应用管理相关 ====================
+// 应用详情相关
 const appDetailVisible = ref(false)
 
+// 失败提示相关
+const showFailureTip = ref(false)
+const failureType = ref<'generation' | 'preview'>('generation')
+
+// 显示应用详情
 const showAppDetail = () => {
   appDetailVisible.value = true
 }
 
-const editApp = () => {
-  if (appInfo.value?.id) {
-    router.push(`/app/edit/${appInfo.value.id}`)
-  }
+// 显示失败提示
+const displayFailureTip = (type: 'generation' | 'preview') => {
+  failureType.value = type
+  showFailureTip.value = true
+
+  // 5秒后自动隐藏提示
+  setTimeout(() => {
+    showFailureTip.value = false
+  }, 5000)
 }
 
-const deleteApp = async () => {
-  if (!appInfo.value?.id) return
-
-  try {
-    const res = await deleteAppApi({ id: appInfo.value.id })
-    if (res.data.code === 0) {
-      message.success('删除成功')
-      appDetailVisible.value = false
-      router.push('/')
-    } else {
-      message.error('删除失败：' + res.data.message)
-    }
-  } catch (error) {
-    console.error('删除失败：', error)
-    message.error('删除失败')
-  }
-}
-
-// ==================== 对话历史管理 ====================
+// 加载对话历史
 const loadChatHistory = async (isLoadMore = false) => {
   if (!appId.value || loadingHistory.value) return
   loadingHistory.value = true
@@ -426,14 +414,6 @@ const loadChatHistory = async (isLoadMore = false) => {
         lastCreateTime.value = chatHistories[chatHistories.length - 1]?.createTime
         // 检查是否还有更多历史
         hasMoreHistory.value = chatHistories.length === 10
-        
-        // 如果不是加载更多，则滚动到底部
-        if (!isLoadMore) {
-          await nextTick()
-          setTimeout(() => {
-            scrollToBottom()
-          }, 100)
-        }
       } else {
         hasMoreHistory.value = false
       }
@@ -447,11 +427,12 @@ const loadChatHistory = async (isLoadMore = false) => {
   }
 }
 
+// 加载更多历史消息
 const loadMoreHistory = async () => {
   await loadChatHistory(true)
 }
 
-// ==================== 应用信息获取 ====================
+// 获取应用信息
 const fetchAppInfo = async () => {
   const id = route.params.id as string
   if (!id) {
@@ -469,10 +450,6 @@ const fetchAppInfo = async () => {
 
       // 先加载对话历史
       await loadChatHistory()
-      
-      // 等待DOM更新完成
-      await nextTick()
-      
       // 如果有至少2条对话记录，展示对应的网站
       if (messages.value.length >= 2) {
         updatePreview()
@@ -498,7 +475,7 @@ const fetchAppInfo = async () => {
   }
 }
 
-// ==================== 消息发送处理 ====================
+// 发送初始消息
 const sendInitialMessage = async (prompt: string) => {
   // 添加用户消息
   messages.value.push({
@@ -522,6 +499,7 @@ const sendInitialMessage = async (prompt: string) => {
   await generateCode(prompt, aiMessageIndex)
 }
 
+// 发送消息
 const sendMessage = async () => {
   if (!userInput.value.trim() || isGenerating.value) {
     return
@@ -571,8 +549,17 @@ const sendMessage = async () => {
   await generateCode(message, aiMessageIndex)
 }
 
-// ==================== AI代码生成 ====================
+// 当前活跃的EventSource连接
+let currentEventSource: EventSource | null = null
+
+// 生成代码 - 使用 EventSource 处理流式响应
 const generateCode = async (userMessage: string, aiMessageIndex: number) => {
+  // 关闭之前的连接，避免并发冲突
+  if (currentEventSource) {
+    currentEventSource.close()
+    currentEventSource = null
+  }
+
   let eventSource: EventSource | null = null
   let streamCompleted = false
 
@@ -592,12 +579,13 @@ const generateCode = async (userMessage: string, aiMessageIndex: number) => {
     eventSource = new EventSource(url, {
       withCredentials: true,
     })
+    currentEventSource = eventSource
 
     let fullContent = ''
 
     // 处理接收到的消息
     eventSource.onmessage = function (event) {
-      if (streamCompleted) return
+      if (streamCompleted || !isGenerating.value) return
 
       try {
         // 解析JSON包装的数据
@@ -617,65 +605,40 @@ const generateCode = async (userMessage: string, aiMessageIndex: number) => {
       }
     }
 
-    // 处理business-error事件（后端限流等错误）
-    eventSource.addEventListener('business-error', function (event: MessageEvent) {
-      if (streamCompleted) return
-
-      try {
-        const errorData = JSON.parse(event.data)
-        console.error('SSE业务错误事件:', errorData)
-
-        // 显示具体的错误信息
-        const errorMessage = errorData.message || '生成过程中出现错误'
-        messages.value[aiMessageIndex].content = `❌ ${errorMessage}`
-        messages.value[aiMessageIndex].loading = false
-        message.error(errorMessage)
-
-        streamCompleted = true
-        isGenerating.value = false
-        eventSource?.close()
-      } catch (parseError) {
-        console.error('解析错误事件失败:', parseError, '原始数据:', event.data)
-        handleError(new Error('服务器返回错误'), aiMessageIndex)
-      }
-    })
-
     // 处理done事件
     eventSource.addEventListener('done', function () {
       if (streamCompleted) return
 
       streamCompleted = true
       isGenerating.value = false
-      eventSource?.close()
+      closeEventSource()
 
       // 立即开始检查预览，然后延迟更新应用信息
       updatePreview()
-      
+
       // 延迟更新应用信息，确保后端已完成处理
       setTimeout(async () => {
         await fetchAppInfo()
-        // 再次检查预览，确保获取到最新的信息
+        // 再次更新预览，确保获取到最新的信息
         updatePreview()
-      }, 2000) // 减少延迟时间，提高响应速度
+      }, 5000) // 增加延迟时间，确保后端有足够时间处理
     })
 
     // 处理错误
-    eventSource.onerror = function () {
+    eventSource.onerror = function (event) {
       if (streamCompleted || !isGenerating.value) return
-      // 检查是否是正常的连接关闭
-      if (eventSource?.readyState === EventSource.CONNECTING) {
+
+      console.error('EventSource错误:', event)
+
+      // 检查连接状态
+      if (eventSource?.readyState === EventSource.CLOSED) {
+        // 连接已关闭，可能是正常结束
         streamCompleted = true
         isGenerating.value = false
-        eventSource?.close()
-
-        // 立即开始检查预览
+        closeEventSource()
         updatePreview()
-        
-        setTimeout(async () => {
-          await fetchAppInfo()
-          updatePreview()
-        }, 2000) // 减少延迟时间，提高响应速度
       } else {
+        // 连接错误
         handleError(new Error('SSE连接错误'), aiMessageIndex)
       }
     }
@@ -685,174 +648,110 @@ const generateCode = async (userMessage: string, aiMessageIndex: number) => {
   }
 }
 
+// 关闭EventSource连接
+const closeEventSource = () => {
+  if (currentEventSource) {
+    currentEventSource.close()
+    currentEventSource = null
+  }
+}
+
+// 错误处理函数
 const handleError = (error: unknown, aiMessageIndex: number) => {
   console.error('生成代码失败：', error)
   messages.value[aiMessageIndex].content = '抱歉，生成过程中出现了错误，请重试。'
   messages.value[aiMessageIndex].loading = false
   message.error('生成失败，请重试')
   isGenerating.value = false
+
+  // 显示失败提示
+  displayFailureTip('generation')
 }
 
-// ==================== 预览管理 ====================
+// 更新预览
 const updatePreview = () => {
   if (appId.value) {
     const codeGenType = appInfo.value?.codeGenType || CodeGenTypeEnum.HTML
     const newPreviewUrl = getStaticPreviewUrl(codeGenType, appId.value)
-    
-    // 检查URL是否发生变化
-    if (previewState.value.url !== newPreviewUrl) {
-      // 清除之前的检查定时器
-      if (previewState.value.checkInterval) {
-        clearInterval(previewState.value.checkInterval)
-      }
-      
-      // 重置预览状态
-      previewState.value = {
-        url: newPreviewUrl,
-        ready: false,
-        refreshKey: previewState.value.refreshKey + 1,
-        checkInterval: null,
-        checkCount: 0,
-        lastHash: '',
-        contentCache: new Map()
-      }
-      
-      console.log('开始检查新的预览URL:', newPreviewUrl)
-      // 开始检查预览是否可用
-      startPreviewCheck()
-    } else {
-      // URL没有变化，但需要检查内容是否更新
-      console.log('URL未变化，检查内容更新...')
-      previewState.value.ready = false
-      // 不增加refreshKey，避免不必要的iframe刷新
-      startPreviewCheck()
-    }
+    previewUrl.value = newPreviewUrl
+    previewReady.value = false // 重置预览就绪状态
+
+    // 强制刷新iframe
+    previewRefreshKey.value++
+
+    // 开始检查预览是否可用
+    startPreviewCheck()
   }
 }
 
+// 开始预览检查
 const startPreviewCheck = () => {
   // 清除之前的定时器
-  if (previewState.value.checkInterval) {
-    clearInterval(previewState.value.checkInterval)
+  if (previewCheckInterval.value) {
+    clearInterval(previewCheckInterval.value)
   }
-  
-  previewState.value.checkCount = 0
+
+  previewCheckCount.value = 0
   console.log('开始预览检查...')
-  
-  // 动态调整检查间隔：前10次每500ms检查，之后每1秒检查
-  const getCheckInterval = (count: number) => {
-    return count <= 10 ? 500 : 1000
-  }
-  
-  const performCheck = async () => {
-    previewState.value.checkCount++
-    const currentInterval = getCheckInterval(previewState.value.checkCount)
-    console.log(`预览检查第${previewState.value.checkCount}次...`)
-    
+
+  // 每1秒检查一次预览是否可用
+  previewCheckInterval.value = setInterval(async () => {
+    previewCheckCount.value++
+    console.log(`预览检查第${previewCheckCount.value}次...`)
+
     try {
-      // 检查预览文件是否存在和内容是否变化
-      const isPreviewAvailable = await checkPreviewAvailabilitySmart()
-      
+      // 检查预览文件是否存在
+      const isPreviewAvailable = await checkPreviewAvailabilityImproved()
+
       if (isPreviewAvailable) {
         // 预览可用，停止检查
         stopPreviewCheck()
         console.log('预览文件已就绪')
         message.success('预览已就绪！')
         // 设置预览就绪状态
-        previewState.value.ready = true
+        previewReady.value = true
         return
       }
-      
+
       // 超过最大检查次数，停止检查
-      if (previewState.value.checkCount >= maxPreviewChecks) {
+      if (previewCheckCount.value >= maxPreviewChecks) {
         stopPreviewCheck()
         console.log('预览检查超时')
         message.warning('预览检查超时，请手动刷新')
+
+        // 显示失败提示
+        displayFailureTip('preview')
         return
-      }
-      
-      // 设置下次检查
-      if (previewState.value.checkInterval) {
-        clearInterval(previewState.value.checkInterval)
-        previewState.value.checkInterval = setInterval(performCheck, currentInterval)
       }
     } catch (error) {
       console.error('预览检查失败:', error)
     }
-  }
-  
-  // 开始第一次检查
-  previewState.value.checkInterval = setInterval(performCheck, 500)
+  }, 1000)
 }
 
+// 停止预览检查
 const stopPreviewCheck = () => {
-  if (previewState.value.checkInterval) {
-    clearInterval(previewState.value.checkInterval)
-    previewState.value.checkInterval = null
+  if (previewCheckInterval.value) {
+    clearInterval(previewCheckInterval.value)
+    previewCheckInterval.value = null
     console.log('预览检查已停止')
   }
 }
 
-const checkPreviewAvailabilitySmart = async (): Promise<boolean> => {
-  if (!previewState.value.url) return false
-  
+// 检查预览是否可用（已废弃，使用改进版本）
+// 改进的预览检查逻辑
+const checkPreviewAvailabilityImproved = async (): Promise<boolean> => {
+  if (!previewUrl.value) return false
+
   try {
-    // 首先尝试通过GET请求检查文件是否存在和内容变化
-    const response = await fetch(previewState.value.url, {
+    // 尝试通过fetch检查文件是否存在
+    await fetch(previewUrl.value, {
       method: 'GET',
-      cache: 'no-cache'
+      mode: 'no-cors', // 避免CORS问题
     })
-    
-    if (response.ok) {
-      const content = await response.text()
-      
-      // 检查内容是否为空或包含错误信息
-      if (!content || content.trim().length === 0) {
-        console.log('预览内容为空，继续等待...')
-        return false
-      }
-      
-      // 检查是否包含错误页面内容
-      if (content.includes('404') || content.includes('Not Found') || content.includes('错误')) {
-        console.log('检测到错误页面，继续等待...')
-        return false
-      }
-      
-      // 计算内容的哈希值
-      const contentHash = simpleHash(content)
-      
-      // 如果是第一次检查或者内容发生变化
-      if (!previewState.value.lastHash || contentHash !== previewState.value.lastHash) {
-        console.log('检测到预览内容变化，哈希值:', contentHash)
-        previewState.value.lastHash = contentHash
-        return true
-      }
-      
-      // 内容没有变化，但文件存在且有效，也认为可用
-      if (previewState.value.checkCount >= 3) {
-        console.log('文件存在且内容稳定，认为预览可用')
-        return true
-      }
-    }
-    
-    // 如果GET请求失败，尝试HEAD请求检查文件是否存在
-    try {
-      const headResponse = await fetch(previewState.value.url, {
-        method: 'HEAD',
-        cache: 'no-cache'
-      })
-      
-      if (headResponse.ok) {
-        console.log('文件存在但内容可能未就绪，继续等待...')
-        return false
-      }
-    } catch (headError) {
-      console.log('HEAD请求失败，文件可能不存在:', headError)
-    }
-    
-    return false
+// 如果能获取到响应，说明文件存在
+    return true
   } catch (error) {
-    console.log('GET请求失败，尝试iframe检查:', error)
     // 如果fetch失败，尝试通过iframe加载检查
     try {
       return await checkIframeAvailability()
@@ -863,93 +762,54 @@ const checkPreviewAvailabilitySmart = async (): Promise<boolean> => {
   }
 }
 
-const simpleHash = (str: string): string => {
-  let hash = 0
-  if (str.length === 0) return hash.toString()
-  
-  for (let i = 0; i < str.length; i++) {
-    const char = str.charCodeAt(i)
-    hash = ((hash << 5) - hash) + char
-    hash = hash & hash // 转换为32位整数
-  }
-  
-  return hash.toString()
-}
-
+// 通过iframe检查预览是否可用
 const checkIframeAvailability = (): Promise<boolean> => {
   return new Promise((resolve) => {
     const testIframe = document.createElement('iframe')
     testIframe.style.display = 'none'
-    testIframe.src = previewState.value.url
-    
+    testIframe.src = previewUrl.value
+
     const timeout = setTimeout(() => {
       document.body.removeChild(testIframe)
       resolve(false)
     }, 3000) // 3秒超时
-    
+
     testIframe.onload = () => {
       clearTimeout(timeout)
       document.body.removeChild(testIframe)
       resolve(true)
     }
-    
+
     testIframe.onerror = () => {
       clearTimeout(timeout)
       document.body.removeChild(testIframe)
       resolve(false)
     }
-    
+
     document.body.appendChild(testIframe)
   })
 }
 
-const refreshPreview = () => {
-  console.log('手动刷新预览')
-  // 重置预览状态
-  previewState.value.ready = false
-  previewState.value.checkCount = 0
-  previewState.value.lastHash = ''
-  previewState.value.contentCache.clear()
-  previewState.value.refreshKey++
-  
-  // 重新开始检查
-  startPreviewCheck()
-  message.info('正在重新检查预览...')
-}
-
-const openPreviewInNewWindow = () => {
-  if (previewState.value.url) {
-    window.open(previewState.value.url, '_blank')
-  }
-}
-
-// ==================== 界面交互 ====================
+// 滚动到底部
 const scrollToBottom = () => {
   if (messagesContainer.value) {
-    // 使用nextTick确保DOM更新完成
-    nextTick(() => {
-      if (messagesContainer.value) {
-        // 平滑滚动到底部
-        messagesContainer.value.scrollTo({
-          top: messagesContainer.value.scrollHeight,
-          behavior: 'smooth'
-        })
-      }
-    })
+    messagesContainer.value.scrollTop = messagesContainer.value.scrollHeight
   }
 }
 
+// 滚动到顶部
 const scrollToTop = () => {
   if (messagesContainer.value) {
     messagesContainer.value.scrollTop = 0
   }
 }
 
+// 显示滚动到顶部按钮
 const showScrollToTop = computed(() => {
   return messagesContainer.value && messagesContainer.value.scrollTop > 100
 })
 
-// ==================== 部署和下载 ====================
+// 部署应用
 const deployApp = async () => {
   if (!appId.value) {
     message.error('应用ID不存在')
@@ -977,19 +837,42 @@ const deployApp = async () => {
   }
 }
 
+// 刷新预览
+const refreshPreview = () => {
+  if (previewUrl.value) {
+    // 强制刷新iframe
+    previewRefreshKey.value++
+    previewReady.value = false
+
+    // 重新开始预览检查
+    startPreviewCheck()
+
+    message.success('正在刷新预览...')
+  }
+}
+
+// 在新窗口打开预览
+const openInNewTab = () => {
+  if (previewUrl.value) {
+    window.open(previewUrl.value, '_blank')
+  }
+}
+
+// 打开部署的网站
 const openDeployedSite = () => {
   if (deployUrl.value) {
     window.open(deployUrl.value, '_blank')
   }
 }
 
+// iframe加载完成
 const onIframeLoad = () => {
-  previewState.value.ready = true
+  previewReady.value = true
   console.log('预览iframe加载完成')
-  
+
   // 停止预览检查
   stopPreviewCheck()
-  
+
   const iframe = document.querySelector('.preview-iframe') as HTMLIFrameElement
   if (iframe) {
     visualEditor.init(iframe)
@@ -997,6 +880,33 @@ const onIframeLoad = () => {
   }
 }
 
+// 编辑应用
+const editApp = () => {
+  if (appInfo.value?.id) {
+    router.push(`/app/edit/${appInfo.value.id}`)
+  }
+}
+
+// 删除应用
+const deleteApp = async () => {
+  if (!appInfo.value?.id) return
+
+  try {
+    const res = await deleteAppApi({ id: appInfo.value.id })
+    if (res.data.code === 0) {
+      message.success('删除成功')
+      appDetailVisible.value = false
+      router.push('/')
+    } else {
+      message.error('删除失败：' + res.data.message)
+    }
+  } catch (error) {
+    console.error('删除失败：', error)
+    message.error('删除失败')
+  }
+}
+
+// 下载代码
 const downloadCode = async () => {
   if (!appId.value) {
     message.error('应用ID不存在')
@@ -1034,7 +944,7 @@ const downloadCode = async () => {
   }
 }
 
-// ==================== 可视化编辑 ====================
+// 可视化编辑相关函数
 const toggleEditMode = () => {
   // 检查 iframe 是否已经加载
   const iframe = document.querySelector('.preview-iframe') as HTMLIFrameElement
@@ -1043,7 +953,7 @@ const toggleEditMode = () => {
     return
   }
   // 确保 visualEditor 已初始化
-  if (!previewState.value.ready) {
+  if (!previewReady.value) {
     message.warning('请等待页面加载完成')
     return
   }
@@ -1063,17 +973,9 @@ const getInputPlaceholder = () => {
   return '请描述你想生成的网站，越详细效果越好哦'
 }
 
-// ==================== 生命周期钩子 ====================
-onMounted(async () => {
-  await fetchAppInfo()
-  
-  // 等待DOM更新完成后滚动到底部
-  await nextTick()
-  
-  // 延迟滚动，确保消息容器和对话历史已渲染
-  setTimeout(() => {
-    scrollToBottom()
-  }, 300)
+// 页面加载时获取应用信息
+onMounted(() => {
+  fetchAppInfo()
 
   // 监听 iframe 消息
   window.addEventListener('message', (event) => {
@@ -1081,24 +983,15 @@ onMounted(async () => {
   })
 })
 
-watch(historyLoaded, (newValue) => {
-  if (newValue && messages.value.length > 0) {
-    // 对话历史加载完成后，延迟滚动到底部
-    nextTick(() => {
-      setTimeout(() => {
-        scrollToBottom()
-      }, 100)
-    })
-  }
-})
-
+// 清理资源
 onUnmounted(() => {
-  // EventSource 会在组件卸载时自动清理
-  
+  // 主动关闭EventSource连接
+  closeEventSource()
+
   // 清理预览检查定时器
-  if (previewState.value.checkInterval) {
-    clearInterval(previewState.value.checkInterval)
-    previewState.value.checkInterval = null
+  if (previewCheckInterval.value) {
+    clearInterval(previewCheckInterval.value)
+    previewCheckInterval.value = null
   }
 })
 </script>
@@ -1120,8 +1013,79 @@ onUnmounted(() => {
   padding: 12px 16px;
 }
 
+/* 失败提示横幅 */
+.failure-tip-banner {
+  background: linear-gradient(135deg, #ff6b6b, #ff8e8e);
+  color: white;
+  padding: 12px 16px;
+  margin: 0 16px 16px 16px;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(255, 107, 107, 0.3);
+  animation: slideDown 0.3s ease-out;
+}
+
+.tip-content {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.tip-icon {
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+.tip-message {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.tip-message > span:first-child {
+  font-weight: 600;
+  font-size: 15px;
+}
+
+.tip-text {
+  font-size: 14px;
+  opacity: 0.9;
+}
+
+.tip-close {
+  cursor: pointer;
+  font-size: 18px;
+  font-weight: bold;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: background-color 0.2s;
+  flex-shrink: 0;
+}
+
+.tip-close:hover {
+  background-color: rgba(255, 255, 255, 0.2);
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 .code-gen-type-tag {
-  font-size: 12px;
+  font-size: 13px;
+}
+
+.generation-tip-text {
+  font-size: 14px;
+  color: #666;
+  margin-left: 12px;
+  font-style: italic;
 }
 
 .header-left {
@@ -1132,7 +1096,7 @@ onUnmounted(() => {
 
 .app-name {
   margin: 0;
-  font-size: 18px;
+  font-size: 20px;
   font-weight: 600;
   color: #1a1a1a;
 }
@@ -1193,6 +1157,7 @@ onUnmounted(() => {
   border-radius: 12px;
   line-height: 1.5;
   word-wrap: break-word;
+  font-size: 14px;
 }
 
 .user-message .message-content {
@@ -1215,6 +1180,7 @@ onUnmounted(() => {
   align-items: center;
   gap: 8px;
   color: #666;
+  font-size: 14px;
 }
 
 .loading-dots {
@@ -1316,7 +1282,7 @@ onUnmounted(() => {
 
 .preview-header h3 {
   margin: 0;
-  font-size: 16px;
+  font-size: 18px;
   font-weight: 600;
 }
 
@@ -1372,18 +1338,11 @@ onUnmounted(() => {
 }
 
 .preview-check-info small {
-  font-size: 12px;
+  font-size: 13px;
   background: rgba(24, 144, 255, 0.1);
   padding: 4px 8px;
   border-radius: 12px;
   border: 1px solid rgba(24, 144, 255, 0.2);
-}
-
-.preview-timeout-actions {
-  margin-top: 16px;
-  display: flex;
-  gap: 8px;
-  justify-content: center;
 }
 
 /* 选中元素信息样式 */
@@ -1405,7 +1364,7 @@ onUnmounted(() => {
 
 .element-item {
   margin-bottom: 4px;
-  font-size: 13px;
+  font-size: 14px;
 }
 
 .element-item:last-child {
@@ -1414,7 +1373,7 @@ onUnmounted(() => {
 
 .element-tag {
   font-family: 'Monaco', 'Menlo', monospace;
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 600;
   color: #007bff;
 }
@@ -1434,7 +1393,7 @@ onUnmounted(() => {
   background: #f6f8fa;
   padding: 2px 4px;
   border-radius: 3px;
-  font-size: 12px;
+  font-size: 13px;
   color: #d73a49;
   border: 1px solid #e1e4e8;
 }
@@ -1462,7 +1421,7 @@ onUnmounted(() => {
     flex: none;
     height: 50vh;
   }
-  
+
   #appChatPage {
     height: 95vh;
   }
@@ -1485,7 +1444,7 @@ onUnmounted(() => {
   .message-content {
     max-width: 85%;
   }
-  
+
   #appChatPage {
     height: 98vh;
     padding: 12px;

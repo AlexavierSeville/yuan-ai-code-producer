@@ -23,7 +23,7 @@ export const CODE_GEN_TYPE_CONFIG = {
     label: 'Vue 项目模式',
     value: CodeGenTypeEnum.VUE_PROJECT,
   },
-}as const
+} as const
 
 /**
  * 代码生成类型选项（用于下拉选择）
@@ -43,19 +43,4 @@ export const formatCodeGenType = (type: string | undefined): string => {
 
   const config = CODE_GEN_TYPE_CONFIG[type as CodeGenTypeEnum]
   return config ? config.label : type
-}
-
-/**
- * 获取所有代码生成类型
- */
-export const getAllCodeGenTypes = () => {
-  return Object.values(CodeGenTypeEnum)
-}
-
-/**
- * 检查是否为有效的代码生成类型
- * @param type 待检查的类型
- */
-export const isValidCodeGenType = (type: string): type is CodeGenTypeEnum => {
-  return Object.values(CodeGenTypeEnum).includes(type as CodeGenTypeEnum)
 }

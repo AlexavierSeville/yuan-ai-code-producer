@@ -5,6 +5,7 @@ import { message } from 'ant-design-vue'
 import { useLoginUserStore } from '@/stores/loginUser'
 import { addApp, listMyAppVoByPage, listGoodAppVoByPage } from '@/api/appController'
 import AppCard from '@/components/AppCard.vue'
+import { DEPLOY_DOMAIN } from '@/config/env'
 
 const router = useRouter()
 const loginUserStore = useLoginUserStore()
@@ -33,6 +34,112 @@ const featuredAppsPage = reactive({
 const setPrompt = (prompt: string) => {
   userPrompt.value = prompt
 }
+
+
+// 提示词模板数据
+const promptTemplates = ref([
+  {
+    id: 1,
+    icon: '📝',
+    title: '个人博客',
+    desc: '现代化博客网站',
+    type: '简易实现',
+    prompt: '简易实现：创建一个简单的个人博客网站，包含首页、文章列表、文章详情三个页面。采用简洁的设计风格，支持响应式布局，文章支持分类和搜索功能，适合个人记录和分享。'
+  },
+  {
+    id: 2,
+    icon: '📝',
+    title: '个人博客',
+    desc: '现代化博客网站',
+    type: '原生多文件',
+    prompt: '原生多文件实现：创建一个完整的个人博客系统，包含前端展示页面和管理后台。支持用户注册登录、文章发布编辑、评论系统、内容管理等功能。采用现代化的界面设计，支持文章分类、标签管理和数据统计。'
+  },
+  {
+    id: 3,
+    icon: '📝',
+    title: '个人博客',
+    desc: '现代化博客网站',
+    type: 'Vue实现',
+    prompt: 'Vue实现：创建一个现代化的个人博客网站，包含文章列表、详情页、分类标签、搜索功能、评论系统和个人简介页面。采用简洁的设计风格，支持响应式布局，文章支持Markdown格式，首页展示最新文章和热门推荐。'
+  },
+  {
+    id: 4,
+    icon: '🏢',
+    title: '企业官网',
+    desc: '专业商务网站',
+    type: '简易实现',
+    prompt: '简易实现：创建一个简单的企业官网，包含首页、关于我们、产品服务、联系我们四个页面。采用商务风格的设计，包含轮播图、产品展示卡片，适合小型企业展示品牌形象。'
+  },
+  {
+    id: 5,
+    icon: '🏢',
+    title: '企业官网',
+    desc: '专业商务网站',
+    type: '原生多文件',
+    prompt: '原生多文件实现：创建一个完整的企业官网系统，包含前端展示页面和管理后台。支持内容管理、新闻发布、产品管理、客户留言等功能。采用专业的商务设计风格，支持多语言切换和在线客服功能。'
+  },
+  {
+    id: 6,
+    icon: '🏢',
+    title: '企业官网',
+    desc: '专业商务网站',
+    type: 'Vue实现',
+    prompt: 'Vue实现：设计一个专业的企业官网，包含公司介绍、产品服务展示、新闻资讯、联系我们等页面。采用商务风格的设计，包含轮播图、产品展示卡片、团队介绍、客户案例展示，支持多语言切换和在线客服功能。'
+  },
+  {
+    id: 7,
+    icon: '🛒',
+    title: '在线商城',
+    desc: '完整电商平台',
+    type: '简易实现',
+    prompt: '简易实现：创建一个简单的在线商城，包含商品展示、购物车、用户注册登录功能。采用现代化的商品卡片布局，支持商品搜索和筛选，适合小型电商业务。'
+  },
+  {
+    id: 8,
+    icon: '🛒',
+    title: '在线商城',
+    desc: '完整电商平台',
+    type: '原生多文件',
+    prompt: '原生多文件实现：创建一个完整的电商系统，包含前端商城和管理后台。支持商品管理、订单处理、支付集成、用户管理、库存管理等功能。采用现代化的界面设计，支持多种支付方式和物流跟踪。'
+  },
+  {
+    id: 9,
+    icon: '🛒',
+    title: '在线商城',
+    desc: '完整电商平台',
+    type: 'Vue实现',
+    prompt: 'Vue实现：构建一个功能完整的在线商城，包含商品展示、购物车、用户注册登录、订单管理、支付结算等功能。设计现代化的商品卡片布局，支持商品搜索筛选、用户评价、优惠券系统和会员积分功能。'
+  }
+])
+
+// 技术栈数据
+const techStack = ref([
+  { name: 'Vue.js', icon: '💚' },
+  { name: 'TypeScript', icon: '🔷' },
+  { name: 'Node.js', icon: '🟢' },
+  { name: 'AI/ML', icon: '🤖' }
+])
+
+// 侧边栏交互方法
+const scrollToInput = () => {
+  const inputSection = document.querySelector('.input-section')
+  if (inputSection) {
+    inputSection.scrollIntoView({ behavior: 'smooth' })
+  }
+}
+
+const showExamples = () => {
+  const examplesSection = document.querySelector('.section')
+  if (examplesSection) {
+    examplesSection.scrollIntoView({ behavior: 'smooth' })
+  }
+}
+
+const clearInput = () => {
+  userPrompt.value = ''
+  message.success('输入已清空')
+}
+
 
 // 创建应用
 const createApp = async () => {
@@ -129,9 +236,8 @@ const viewWork = (app: API.AppVO) => {
   }
   
   // 通过 nginx 访问部署后的网页
-  // nginx 配置在 8701 端口，根目录为 code_deploy
-  // 访问格式：http://localhost:8701/{deployKey}/
-  const nginxUrl = `http://localhost:8701/${key}/`
+  // 使用配置的部署域名
+  const nginxUrl = `${DEPLOY_DOMAIN}/${key}/`
   window.open(nginxUrl, '_blank')
 }
 
@@ -158,6 +264,143 @@ onUnmounted(() => {
 
 <template>
   <div id="homePage">
+    <!-- 左侧边栏 -->
+    <div class="sidebar left-sidebar">
+      <div class="sidebar-content">
+        <!-- 提示词模板 -->
+        <div class="template-panel">
+          <h3>💡 提示词模板</h3>
+          <div class="template-list">
+            <div 
+              v-for="template in promptTemplates" 
+              :key="template.id"
+              class="template-item"
+              @click="setPrompt(template.prompt)"
+            >
+              <div class="template-icon">{{ template.icon }}</div>
+              <div class="template-content">
+                <div class="template-title">{{ template.title }}</div>
+                <div class="template-type">{{ template.type }}</div>
+                <div class="template-desc">{{ template.desc }}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 功能特色 -->
+        <div class="features-panel">
+          <h3>✨ 平台特色</h3>
+          <div class="feature-list">
+            <div class="feature-item">
+              <span class="feature-icon">🚀</span>
+              <span>一键生成</span>
+            </div>
+            <div class="feature-item">
+              <span class="feature-icon">🎨</span>
+              <span>多种风格</span>
+            </div>
+            <div class="feature-item">
+              <span class="feature-icon">📱</span>
+              <span>响应式设计</span>
+            </div>
+            <div class="feature-item">
+              <span class="feature-icon">⚡</span>
+              <span>快速部署</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 使用技巧 -->
+        <div class="tips-panel">
+          <h3>💡 使用技巧</h3>
+          <div class="tips-list">
+            <div class="tip-item">
+              <div class="tip-number">1</div>
+              <div class="tip-text">描述越详细，生成效果越好</div>
+            </div>
+            <div class="tip-item">
+              <div class="tip-number">2</div>
+              <div class="tip-text">可以指定颜色、布局等要求</div>
+            </div>
+            <div class="tip-item">
+              <div class="tip-number">3</div>
+              <div class="tip-text">支持多种技术栈选择</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 右侧边栏 -->
+    <div class="sidebar right-sidebar">
+      <div class="sidebar-content">
+        <!-- 快速操作 -->
+        <div class="actions-panel">
+          <h3>⚡ 快速操作</h3>
+          <div class="action-buttons">
+            <a-button 
+              type="primary" 
+              block 
+              class="action-btn"
+              @click="scrollToInput"
+            >
+              <template #icon>✏️</template>
+              开始创作
+            </a-button>
+            <a-button 
+              type="default" 
+              block 
+              class="action-btn"
+              @click="showExamples"
+            >
+              <template #icon>👀</template>
+              查看案例
+            </a-button>
+            <a-button 
+              type="default" 
+              block 
+              class="action-btn"
+              @click="clearInput"
+            >
+              <template #icon>🗑️</template>
+              清空输入
+            </a-button>
+          </div>
+        </div>
+
+        <!-- 技术栈展示 -->
+        <div class="tech-panel">
+          <h3>🛠️ 支持技术</h3>
+          <div class="tech-grid">
+            <div class="tech-item" v-for="tech in techStack" :key="tech.name">
+              <div class="tech-icon">{{ tech.icon }}</div>
+              <div class="tech-name">{{ tech.name }}</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 帮助信息 -->
+        <div class="help-panel">
+          <h3>❓ 需要帮助？</h3>
+          <div class="help-content">
+            <div class="help-item" @click="router.push('/funny/tutorial')">
+              <div class="help-icon">📖</div>
+              <div class="help-text">查看使用教程</div>
+            </div>
+            <div class="help-item" @click="router.push('/funny/support')">
+              <div class="help-icon">💬</div>
+              <div class="help-text">联系客服支持</div>
+            </div>
+            <div class="help-item" @click="router.push('/funny/feedback')">
+              <div class="help-icon">📧</div>
+              <div class="help-text">发送邮件反馈</div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
     <div class="container">
       <!-- 英雄区域 -->
       <div class="hero-section">
@@ -187,19 +430,19 @@ onUnmounted(() => {
       <div class="quick-actions">
         <a-button
           type="default"
-          @click="setPrompt('创建一个现代化的个人博客网站，包含文章列表、详情页、分类标签、搜索功能、评论系统和个人简介页面。采用简洁的设计风格，支持响应式布局，文章支持Markdown格式，首页展示最新文章和热门推荐。')"
+          @click="setPrompt('Vue实现：创建一个现代化的个人博客网站，包含文章列表、详情页、分类标签、搜索功能、评论系统和个人简介页面。采用简洁的设计风格，支持响应式布局，文章支持Markdown格式，首页展示最新文章和热门推荐。')"
         >个人博客网站</a-button>
         <a-button
           type="default"
-          @click="setPrompt('设计一个专业的企业官网，包含公司介绍、产品服务展示、新闻资讯、联系我们等页面。采用商务风格的设计，包含轮播图、产品展示卡片、团队介绍、客户案例展示，支持多语言切换和在线客服功能。')"
+          @click="setPrompt('Vue实现：设计一个专业的企业官网，包含公司介绍、产品服务展示、新闻资讯、联系我们等页面。采用商务风格的设计，包含轮播图、产品展示卡片、团队介绍、客户案例展示，支持多语言切换和在线客服功能。')"
         >企业官网</a-button>
         <a-button
           type="default"
-          @click="setPrompt('构建一个功能完整的在线商城，包含商品展示、购物车、用户注册登录、订单管理、支付结算等功能。设计现代化的商品卡片布局，支持商品搜索筛选、用户评价、优惠券系统和会员积分功能。')"
+          @click="setPrompt('Vue实现：构建一个功能完整的在线商城，包含商品展示、购物车、用户注册登录、订单管理、支付结算等功能。设计现代化的商品卡片布局，支持商品搜索筛选、用户评价、优惠券系统和会员积分功能。')"
         >在线商城</a-button>
         <a-button
           type="default"
-          @click="setPrompt('制作一个精美的作品展示网站，适合设计师、摄影师、艺术家等创作者。包含作品画廊、项目详情页、个人简历、联系方式等模块。采用瀑布流或网格布局展示作品，支持图片放大预览和作品分类筛选。')"
+          @click="setPrompt('Vue实现：制作一个精美的作品展示网站，适合设计师、摄影师、艺术家等创作者。包含作品画廊、项目详情页、个人简历、联系方式等模块。采用瀑布流或网格布局展示作品，支持图片放大预览和作品分类筛选。')"
         >作品展示网站</a-button>
       </div>
 
@@ -330,6 +573,308 @@ onUnmounted(() => {
   }
 }
 
+/* 侧边栏样式 */
+.sidebar {
+  position: fixed;
+  top: 80px;
+  width: 280px;
+  height: calc(100vh - 100px);
+  overflow: visible;
+  z-index: 10;
+  padding: 20px;
+  box-sizing: border-box;
+}
+
+.left-sidebar {
+  left: 20px;
+}
+
+.right-sidebar {
+  right: 20px;
+}
+
+.sidebar-content {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.sidebar h3 {
+  font-size: 16px;
+  font-weight: 600;
+  margin: 0 0 16px;
+  color: #1e293b;
+  padding-bottom: 8px;
+  border-bottom: 2px solid rgba(59, 130, 246, 0.2);
+}
+
+/* 提示词模板面板 */
+.template-panel {
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(20px);
+  border-radius: 16px;
+  padding: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+}
+
+.template-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.template-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.3s;
+  border: 1px solid rgba(59, 130, 246, 0.1);
+  flex-shrink: 0;
+}
+
+.template-item:hover {
+  background: rgba(59, 130, 246, 0.05);
+  border-color: rgba(59, 130, 246, 0.3);
+  transform: translateX(4px);
+}
+
+.template-icon {
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+.template-content {
+  flex: 1;
+}
+
+.template-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1e293b;
+  margin-bottom: 4px;
+}
+
+.template-type {
+  font-size: 11px;
+  color: #3b82f6;
+  background: rgba(59, 130, 246, 0.1);
+  padding: 2px 6px;
+  border-radius: 4px;
+  display: inline-block;
+  margin-bottom: 4px;
+  font-weight: 500;
+}
+
+.template-desc {
+  font-size: 12px;
+  color: #64748b;
+}
+
+/* 功能特色面板 */
+.features-panel {
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(20px);
+  border-radius: 16px;
+  padding: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+}
+
+.feature-list {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.feature-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: rgba(59, 130, 246, 0.05);
+  border-radius: 8px;
+  font-size: 12px;
+  color: #475569;
+  transition: all 0.3s;
+}
+
+.feature-item:hover {
+  background: rgba(59, 130, 246, 0.1);
+  transform: translateY(-2px);
+}
+
+.feature-icon {
+  font-size: 16px;
+}
+
+/* 使用技巧面板 */
+.tips-panel {
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(20px);
+  border-radius: 16px;
+  padding: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+}
+
+.tips-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.tip-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px;
+  background: rgba(16, 185, 129, 0.05);
+  border-radius: 8px;
+  transition: all 0.3s;
+}
+
+.tip-item:hover {
+  background: rgba(16, 185, 129, 0.1);
+  transform: translateX(4px);
+}
+
+.tip-number {
+  width: 20px;
+  height: 20px;
+  background: #10b981;
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.tip-text {
+  font-size: 12px;
+  color: #475569;
+  line-height: 1.4;
+}
+
+/* 快速操作面板 */
+.actions-panel {
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(20px);
+  border-radius: 16px;
+  padding: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+}
+
+.action-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.action-btn {
+  border-radius: 12px;
+  height: 40px;
+  font-weight: 500;
+  transition: all 0.3s;
+}
+
+.action-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* 技术栈面板 */
+.tech-panel {
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(20px);
+  border-radius: 16px;
+  padding: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+}
+
+.tech-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.tech-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 12px;
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(139, 92, 246, 0.1));
+  border-radius: 12px;
+  transition: all 0.3s;
+  border: 1px solid rgba(59, 130, 246, 0.2);
+}
+
+.tech-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);
+}
+
+.tech-icon {
+  font-size: 20px;
+}
+
+.tech-name {
+  font-size: 12px;
+  font-weight: 500;
+  color: #475569;
+}
+
+/* 帮助面板 */
+.help-panel {
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(20px);
+  border-radius: 16px;
+  padding: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+}
+
+.help-content {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.help-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  border-radius: 8px;
+  transition: all 0.3s;
+  cursor: pointer;
+}
+
+.help-item:hover {
+  background: rgba(59, 130, 246, 0.05);
+  transform: translateX(4px);
+}
+
+.help-icon {
+  font-size: 16px;
+  flex-shrink: 0;
+}
+
+.help-text {
+  font-size: 12px;
+  color: #475569;
+}
+
+
 .container {
   max-width: 1200px;
   margin: 0 auto;
@@ -376,7 +921,7 @@ onUnmounted(() => {
 }
 
 .hero-title {
-  font-size: 56px;
+  font-size: 64px;
   font-weight: 700;
   margin: 0 0 20px;
   line-height: 1.2;
@@ -391,12 +936,14 @@ onUnmounted(() => {
 }
 
 @keyframes titleShimmer {
-  0%,
-  100% {
+  0% {
     background-position: 0% 50%;
   }
   50% {
     background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
   }
 }
 
@@ -489,7 +1036,7 @@ onUnmounted(() => {
 /* 响应式设计 */
 @media (max-width: 768px) {
   .hero-title {
-    font-size: 32px;
+    font-size: 40px;
   }
 
   .hero-description {
