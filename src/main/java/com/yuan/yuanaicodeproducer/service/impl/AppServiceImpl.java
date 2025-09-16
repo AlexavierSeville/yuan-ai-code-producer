@@ -25,6 +25,8 @@ import com.yuan.yuanaicodeproducer.model.enums.ChatHistoryMessageTypeEnum;
 import com.yuan.yuanaicodeproducer.model.enums.CodeGenTypeEnum;
 import com.yuan.yuanaicodeproducer.model.vo.AppVO;
 import com.yuan.yuanaicodeproducer.model.vo.UserVO;
+import com.yuan.yuanaicodeproducer.monitor.MonitorContext;
+import com.yuan.yuanaicodeproducer.monitor.MonitorContextHolder;
 import com.yuan.yuanaicodeproducer.service.AppService;
 import com.yuan.yuanaicodeproducer.service.ChatHistoryService;
 import com.yuan.yuanaicodeproducer.service.ScreenshotService;
@@ -53,7 +55,7 @@ import java.util.stream.Collectors;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class AppServiceImpl extends ServiceImpl<AppMapper, App>  implements AppService{
+public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppService {
 
     @Value("${code.deploy-host:http://localhost}")
     private String deployHost;
@@ -75,27 +77,37 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App>  implements AppS
         App app = this.getById(appId);
         ThrowUtils.throwIf(app == null, ErrorCode.NOT_FOUND_ERROR, "应用不存在");
         // 3.权限校验，仅本人可以和自己的应用对话
-        if (!app.getUserId().equals(loginUser.getId())){
+        if (!app.getUserId().equals(loginUser.getId())) {
             throw new BusinessException(ErrorCode.NO_AUTH_ERROR, "无权限操作该应用");
         }
         // 4. 获取应用的代码生成类型
         String codeGenType = app.getCodeGenType();
         CodeGenTypeEnum codeGenTypeEnum = CodeGenTypeEnum.getEnumByValue(codeGenType);
-        if (codeGenTypeEnum == null){
+        if (codeGenTypeEnum == null) {
             throw new BusinessException(ErrorCode.SYSTEM_ERROR, "代码生成类型错误");
         }
         // 5. 在保存用户信息前，先保存用户消息到数据库
-        boolean addChatMessage = chatHistoryService.addChatMessage(appId, userMessage, ChatHistoryMessageTypeEnum.USER.getValue(), loginUser.getId());
-        // 6. 调用大模型生成代码（流式）
+        chatHistoryService.addChatMessage(appId, userMessage, ChatHistoryMessageTypeEnum.USER.getValue(), loginUser.getId());
+        // 6. 设置监控上下文
+        MonitorContextHolder.setContext(
+                MonitorContext.builder()
+                        .userId(loginUser.getId().toString())
+                        .appId(appId.toString())
+                        .build()
+        );
+        // 7. 调用 AI 生成代码（流式）
         Flux<String> codeStream = aiCodeGeneratorFacade.generateAndSaveCodeStream(userMessage, codeGenTypeEnum, appId);
-        // 7. 收集 AI 响应的内容，并且在完成后保存记录到对话历史(非常复杂)
+        // 8. 收集 AI 响应内容并在完成后记录到对话历史
         return streamHandlerExecutor.doExecute(
                 codeStream,
                 chatHistoryService,
                 appId,
                 loginUser,
                 codeGenTypeEnum
-        );
+        ).doFinally(signalType -> {
+            // 流结束时清理（无论成功/失败/取消）
+            MonitorContextHolder.clearContext();
+        });
     }
 
     @Override
@@ -277,7 +289,7 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App>  implements AppS
         }
         // 删除应用时，删除该应用下的所有聊天记录
         long appId = Long.parseLong(id.toString());
-        if (appId<=0){
+        if (appId <= 0) {
             return false;
         }
         // 先删除关联的对话历史

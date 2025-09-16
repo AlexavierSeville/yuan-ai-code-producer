@@ -146,7 +146,7 @@ const originItems = [
     label: '元仔代码站',
     title: '元仔代码站',
     onClick: () => {
-      window.open('http://localhost:8701/', '_blank')
+      window.open('https://alexavieryuan.us.kg/', '_blank')
     }
   },
 ]
@@ -176,11 +176,11 @@ const filteredMenuItems = computed<MenuProps['items']>(() => filterMenus(originI
   justify-content: space-between;
   gap: 8px;
   padding: 0 16px;
-  background: linear-gradient(135deg, 
-    rgba(30, 60, 114, 0.95) 0%, 
-    rgba(75, 0, 130, 0.95) 25%, 
-    rgba(138, 43, 226, 0.95) 50%, 
-    rgba(30, 60, 114, 0.95) 75%, 
+  background: linear-gradient(135deg,
+    rgba(30, 60, 114, 0.95) 0%,
+    rgba(75, 0, 130, 0.95) 25%,
+    rgba(138, 43, 226, 0.95) 50%,
+    rgba(30, 60, 114, 0.95) 75%,
     rgba(75, 0, 130, 0.95) 100%
   );
   background-size: 400% 400%;
@@ -194,11 +194,11 @@ const filteredMenuItems = computed<MenuProps['items']>(() => filterMenus(originI
 }
 
 .global-header:hover {
-  background: linear-gradient(135deg, 
-    rgba(30, 60, 114, 0.98) 0%, 
-    rgba(75, 0, 130, 0.98) 25%, 
-    rgba(138, 43, 226, 0.98) 50%, 
-    rgba(30, 60, 114, 0.98) 75%, 
+  background: linear-gradient(135deg,
+    rgba(30, 60, 114, 0.98) 0%,
+    rgba(75, 0, 130, 0.98) 25%,
+    rgba(138, 43, 226, 0.98) 50%,
+    rgba(30, 60, 114, 0.98) 75%,
     rgba(75, 0, 130, 0.98) 100%
   );
   background-size: 400% 400%;
@@ -376,13 +376,13 @@ const filteredMenuItems = computed<MenuProps['items']>(() => filterMenus(originI
   .global-header {
     padding: 0 16px;
   }
-  
+
   :deep(.ant-menu-light.ant-menu-horizontal > .ant-menu-item),
   :deep(.ant-menu-light.ant-menu-horizontal > .ant-menu-submenu) {
     padding: 0 14px;
     min-width: 90px;
   }
-  
+
   :deep(.ant-menu-submenu-title) {
     padding: 0 14px !important;
     min-width: 90px !important;
@@ -393,24 +393,24 @@ const filteredMenuItems = computed<MenuProps['items']>(() => filterMenus(originI
   .title {
     display: none;
   }
-  
+
   .global-header {
     padding: 0 12px;
   }
-  
+
   :deep(.ant-menu-light.ant-menu-horizontal > .ant-menu-item),
   :deep(.ant-menu-light.ant-menu-horizontal > .ant-menu-submenu) {
     font-size: 18px;
     padding: 0 12px;
     min-width: 80px;
   }
-  
+
   :deep(.ant-menu-submenu-title) {
     font-size: 18px !important;
     padding: 0 12px !important;
     min-width: 80px !important;
   }
-  
+
   :deep(.ant-menu) {
     max-width: 100%;
     overflow-x: auto;
@@ -422,24 +422,24 @@ const filteredMenuItems = computed<MenuProps['items']>(() => filterMenus(originI
   .global-header {
     padding: 0 8px;
   }
-  
+
   :deep(.ant-menu-light.ant-menu-horizontal > .ant-menu-item),
   :deep(.ant-menu-light.ant-menu-horizontal > .ant-menu-submenu) {
     font-size: 16px;
     padding: 0 8px;
     min-width: 70px;
   }
-  
+
   :deep(.ant-menu-submenu-title) {
     font-size: 16px !important;
     padding: 0 8px !important;
     min-width: 70px !important;
   }
-  
+
   .header-left {
     gap: 12px;
   }
-  
+
   .logo {
     width: 90px; /* 移动端logo稍微小一点 */
   }
@@ -513,11 +513,11 @@ const filteredMenuItems = computed<MenuProps['items']>(() => filterMenus(originI
   .title {
     display: none;
   }
-  
+
   .global-header {
     padding: 0 16px;
   }
-  
+
   :deep(.ant-menu) {
     overflow-x: auto;
   }
@@ -830,7 +830,7 @@ const filteredMenuItems = computed<MenuProps['items']>(() => filterMenus(originI
 :deep(.ant-menu-light.ant-menu-horizontal > .ant-menu-item:hover),
 :deep(.ant-menu-light.ant-menu-horizontal > .ant-menu-submenu:hover) {
   filter: drop-shadow(0 2px 4px rgba(24, 144, 255, 0.1));
-  box-shadow: 
+  box-shadow:
     0 2px 8px rgba(24, 144, 255, 0.1),
     0 0 10px rgba(24, 144, 255, 0.05);
 }

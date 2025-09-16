@@ -11,7 +11,7 @@
 	<groupId>com.yuan</groupId>
 	<artifactId>yuan-ai-code-producer</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
-	<name>yuan-ai-code-producer</name>
+    <name>yuan-ai-code-producer</name>
 	<description>yuan-ai-code-producer</description>
 	<url/>
 	<licenses>
@@ -20,7 +20,7 @@
 	<developers>
 		<developer/>
 	</developers>
-	<scm>
+    <scm>
 		<connection/>
 		<developerConnection/>
 		<tag/>
@@ -34,8 +34,15 @@
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-web</artifactId>
 		</dependency>
-
-		<dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-actuator</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.micrometer</groupId>
+            <artifactId>micrometer-registry-prometheus</artifactId>
+        </dependency>
+        <dependency>
 			<groupId>com.mysql</groupId>
 			<artifactId>mysql-connector-j</artifactId>
 			<scope>runtime</scope>
