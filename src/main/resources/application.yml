@@ -1,3 +1,4 @@
+# 部分设置涉及密钥，因此不上传，请自行填写
 spring:
   application:
     name: yuan-ai-code-producer

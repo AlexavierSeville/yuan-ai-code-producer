@@ -1,0 +1,10 @@
+# 部分设置涉及密钥，因此不上传，请自行填写
+spring:
+  application:
+    name: yuan-ai-code-screenshot
+  profiles:
+    active: local
+server:
+  port: 8773
+  servlet:
+    context-path: /yuan
